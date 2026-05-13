@@ -1,10 +1,9 @@
 package ec.edu.espe.coworkingapp;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
-@SpringBootTest(webEnvironment = WebEnvironment.NONE)
+@DataJpaTest
 class CoworkingAppApplicationTests {
 
     @Test
