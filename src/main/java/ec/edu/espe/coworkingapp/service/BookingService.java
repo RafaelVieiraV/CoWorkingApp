@@ -1,13 +1,17 @@
 package ec.edu.espe.coworkingapp.service;
 
-import ec.edu.espe.coworkingapp.dto.request.BookingRequest;
-import ec.edu.espe.coworkingapp.dto.response.BookingResponse;
+import ec.edu.espe.coworkingapp.domain.BookingStatus;
+import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 import java.util.List;
 
 public interface BookingService {
-    List<BookingResponse> findAll();
-    BookingResponse findById(Long id);
-    BookingResponse create(BookingRequest request);
-    BookingResponse cancel(Long id);
-    List<BookingResponse> findByMember(Long memberId);
+    BookingResponseDto create(BookingRequestDto dto);
+    BookingResponseDto findById(Long id);
+    List<BookingResponseDto> findAll();
+    List<BookingResponseDto> findByMember(Long memberId);
+    List<BookingResponseDto> findByWorkspace(Long workspaceId);
+    List<BookingResponseDto> findByStatus(BookingStatus status);
+    BookingResponseDto confirm(Long id);
+    BookingResponseDto cancel(Long id);
 }

@@ -1,38 +1,17 @@
-package ec.edu.espe.coworkingapp.domain;
+package ec.edu.espe.coworkingapp.dto.response;
 
-import jakarta.persistence.*;
+import ec.edu.espe.coworkingapp.domain.WorkspaceType;
 
-@Entity
-@Table(name = "workspaces")
-public class Workspace {
+public class WorkspaceResponseDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false, unique = true, length = 100)
     private String name;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private WorkspaceType type;
-
-    @Column(nullable = false)
     private Integer capacity;
-
-    @Column(name = "price_per_hour", nullable = false)
     private Double pricePerHour;
-
-    @Column(name = "floor", nullable = false)
     private Integer floor;
-
-    @Column(nullable = false)
-    private Boolean available = true;
-
-    @Column(length = 255)
+    private Boolean available;
     private String description;
-
-    public Workspace() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

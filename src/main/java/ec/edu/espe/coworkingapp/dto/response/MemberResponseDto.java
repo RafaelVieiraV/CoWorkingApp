@@ -1,39 +1,20 @@
-package ec.edu.espe.coworkingapp.domain;
+package ec.edu.espe.coworkingapp.dto.response;
 
-import jakarta.persistence.*;
+import ec.edu.espe.coworkingapp.domain.PlanType;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "members")
-public class Member {
+public class MemberResponseDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "full_name", nullable = false, length = 120)
     private String fullName;
-
-    @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
-
-    @Column(name = "phone", length = 20)
     private String phone;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "plan_type", nullable = false)
     private PlanType planType;
-
-    @Column(name = "monthly_hours_quota", nullable = false)
     private Integer monthlyHoursQuota;
-
-    @Column(name = "active", nullable = false)
-    private Boolean active = true;
-
-    @Column(name = "created_at", nullable = false)
+    private Boolean active;
     private LocalDateTime createdAt;
-
-    public Member() {}
+    // Optional extra logic mentioned in the spec, we will add manually where needed or include here.
+    private Double usedHoursThisMonth;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -51,4 +32,6 @@ public class Member {
     public void setActive(Boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Double getUsedHoursThisMonth() { return usedHoursThisMonth; }
+    public void setUsedHoursThisMonth(Double usedHoursThisMonth) { this.usedHoursThisMonth = usedHoursThisMonth; }
 }

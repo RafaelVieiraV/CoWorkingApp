@@ -1,12 +1,14 @@
 package ec.edu.espe.coworkingapp.web.controller;
 
-import ec.edu.espe.coworkingapp.dto.request.BookingRequest;
-import ec.edu.espe.coworkingapp.dto.response.BookingResponse;
+import ec.edu.espe.coworkingapp.domain.BookingStatus;
+import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 import ec.edu.espe.coworkingapp.service.BookingService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -19,28 +21,48 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
+    @PostMapping
+    public ResponseEntity<BookingResponseDto> create(@Valid @RequestBody BookingRequestDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.create(dto));
+    }
+
     @GetMapping
-    public ResponseEntity<List<BookingResponse>> findAll() {
+    public ResponseEntity<List<BookingResponseDto>> findAll() {
         return ResponseEntity.ok(bookingService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponse> findById(@PathVariable Long id) {
+    public ResponseEntity<BookingResponseDto> findById(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.findById(id));
     }
 
-    @PostMapping
-    public ResponseEntity<BookingResponse> create(@Valid @RequestBody BookingRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.create(request));
+    @GetMapping("/member/{memberId}")
+    public ResponseEntity<List<BookingResponseDto>> findByMember(@PathVariable Long memberId) {
+        return ResponseEntity.ok(bookingService.findByMember(memberId));
+    }
+
+    @GetMapping("/workspace/{workspaceId}")
+    public ResponseEntity<List<BookingResponseDto>> findByWorkspace(@PathVariable Long workspaceId) {
+        return ResponseEntity.ok(bookingService.findByWorkspace(workspaceId));
+    }
+
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<BookingResponseDto>> findByStatus(@PathVariable String status) {
+        try {
+            BookingStatus enumStatus = BookingStatus.valueOf(status.toUpperCase());
+            return ResponseEntity.ok(bookingService.findByStatus(enumStatus));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PatchMapping("/{id}/confirm")
+    public ResponseEntity<BookingResponseDto> confirm(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.confirm(id));
     }
 
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<BookingResponse> cancel(@PathVariable Long id) {
+    public ResponseEntity<BookingResponseDto> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.cancel(id));
-    }
-
-    @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<BookingResponse>> findByMember(@PathVariable Long memberId) {
-        return ResponseEntity.ok(bookingService.findByMember(memberId));
     }
 }

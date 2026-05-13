@@ -1,20 +1,20 @@
 package ec.edu.espe.coworkingapp.dto.request;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-public class BookingRequest {
+public class BookingRequestDto {
 
-    @NotNull(message = "El ID del miembro es obligatorio")
+    @NotNull(message = "El miembro es obligatorio")
     private Long memberId;
 
-    @NotNull(message = "El ID del workspace es obligatorio")
+    @NotNull(message = "El workspace es obligatorio")
     private Long workspaceId;
 
-    @NotNull(message = "La fecha de inicio es obligatoria")
+    @NotNull(message = "La fecha/hora de inicio es obligatoria")
     private LocalDateTime startDatetime;
 
-    @NotNull(message = "La fecha de fin es obligatoria")
+    @NotNull(message = "La fecha/hora de fin es obligatoria")
     private LocalDateTime endDatetime;
 
     public Long getMemberId() { return memberId; }
@@ -22,7 +22,7 @@ public class BookingRequest {
     public Long getWorkspaceId() { return workspaceId; }
     public void setWorkspaceId(Long workspaceId) { this.workspaceId = workspaceId; }
     public LocalDateTime getStartDatetime() { return startDatetime; }
-    public void setStartDatetime(LocalDateTime v) { this.startDatetime = v; }
+    public void setStartDatetime(LocalDateTime startDatetime) { this.startDatetime = startDatetime; }
     public LocalDateTime getEndDatetime() { return endDatetime; }
-    public void setEndDatetime(LocalDateTime v) { this.endDatetime = v; }
+    public void setEndDatetime(LocalDateTime endDatetime) { this.endDatetime = endDatetime; }
 }

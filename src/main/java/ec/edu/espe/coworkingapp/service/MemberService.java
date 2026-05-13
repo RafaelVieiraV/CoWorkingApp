@@ -1,13 +1,13 @@
 package ec.edu.espe.coworkingapp.service;
 
-import ec.edu.espe.coworkingapp.dto.request.MemberRequest;
-import ec.edu.espe.coworkingapp.dto.response.MemberResponse;
+import ec.edu.espe.coworkingapp.dto.request.MemberRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.MemberResponseDto;
 import java.util.List;
 
 public interface MemberService {
-    List<MemberResponse> findAll();
-    MemberResponse findById(Long id);
-    MemberResponse create(MemberRequest request);
-    MemberResponse update(Long id, MemberRequest request);
-    void delete(Long id);
+    MemberResponseDto create(MemberRequestDto dto);
+    MemberResponseDto findById(Long id);
+    List<MemberResponseDto> findAll();
+    List<MemberResponseDto> findAllActive();
+    void deactivate(Long id);
 }
