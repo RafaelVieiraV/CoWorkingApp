@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - CoWorking App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+
+        .login-page {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Lado izquierdo — imagen */
+        .login-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: #fff;
+        }
+
+        .login-left img {
+            max-width: 100%;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        /* Barra naranja */
+        .sidebar-bar {
+            width: 18px;
+            background: #E37B58;
+            flex-shrink: 0;
+        }
+
+        /* Lado derecho — formularios */
+        .login-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 4rem;
+            background: #fff;
+        }
+
+        .login-right h1 {
+            font-size: 56px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .form-control {
+            border-radius: 50px;
+            background: #f2f2f2;
+            border: none;
+            padding: 14px 20px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .form-control:focus {
+            background: #ebebeb;
+            box-shadow: none;
+            border: none;
+        }
+
+        .form-control::placeholder { color: #999; }
+
+        .btn-start {
+            background: #E37B58;
+            border: none;
+            border-radius: 50px;
+            padding: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-start:hover { background: #d06843; }
+
+        .toggle-link {
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .toggle-link a {
+            color: #E37B58;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .toggle-link a:hover { text-decoration: underline; }
+
+        .error-msg {
+            color: #d9534f;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .success-msg {
+            color: #2D6A4F;
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .form-section {
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .form-section.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-page">
+
+    <!-- Barra naranja -->
+    <div class="sidebar-bar"></div>
+    
+    <!-- Imagen izquierda -->
+    <div class="login-left">
+        <img th:src="@{/images/login-image.jpg}" alt="CoWorking illustration"/>
+    </div>
+
+    <!-- Formularios -->
+    <div class="login-right">
+
+        <!-- FORM LOGIN -->
+        <div id="loginSection" class="form-section">
+            <h1>Login</h1>
+            <p class="subtitle">
+                Portal de Recepción: Inicie sesión para<br/>
+                gestionar el inventario de puestos.
+            </p>
+
+            <div th:if="${error}" class="error-msg" th:text="${error}"></div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="mb-3">
+                    <input type="email" name="email" class="form-control" placeholder="Email" required/>
+                </div>
+                <div class="mb-4">
+                    <input type="password" name="password" class="form-control" placeholder="Password" required/>
+                </div>
+                <button type="submit" class="btn-start">Let's Start!</button>
+            </form>
+
+            <p class="toggle-link">
+                ¿No tienes una cuenta? <a onclick="showRegister()">Regístrate</a>
+            </p>
+        </div>
+
+        <!-- FORM REGISTRO -->
+        <div id="registerSection" class="form-section hidden">
+            <h1>Registro</h1>
+            <p class="subtitle">
+                Crea tu cuenta de administrador<br/>
+                para acceder al sistema.
+            </p>
+
+            <div id="registerError" class="error-msg" style="display:none;"></div>
+            <div id="registerSuccess" class="success-msg" style="display:none;"></div>
+
+            <div class="mb-3">
+                <input type="email" id="regEmail" class="form-control" placeholder="Email" required/>
+            </div>
+            <div class="mb-3">
+                <input type="password" id="regPassword" class="form-control" placeholder="Password" required/>
+            </div>
+            <div class="mb-4">
+                <input type="password" id="regConfirm" class="form-control" placeholder="Confirmar Password" required/>
+            </div>
+            <button class="btn-start" onclick="doRegister()">Crear cuenta</button>
+
+            <p class="toggle-link">
+                ¿Ya tienes cuenta? <a onclick="showLogin()">Inicia sesión</a>
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function showRegister() {
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('registerSection').classList.remove('hidden');
+    }
+
+    function showLogin() {
+        document.getElementById('registerSection').classList.add('hidden');
+        document.getElementById('loginSection').classList.remove('hidden');
+    }
+
+    async function doRegister() {
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        const confirm = document.getElementById('regConfirm').value;
+        const errorDiv = document.getElementById('registerError');
+        const successDiv = document.getElementById('registerSuccess');
+
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+
+        if (password !== confirm) {
+            errorDiv.textContent = 'Las contraseñas no coinciden';
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                successDiv.textContent = '¡Cuenta creada! Ahora inicia sesión.';
+                successDiv.style.display = 'block';
+                setTimeout(() => showLogin(), 2000);
+            } else {
+                errorDiv.textContent = data.error || 'Error al registrar';
+                errorDiv.style.display = 'block';
+            }
+        } catch (e) {
+            errorDiv.textContent = 'Error de conexión';
+            errorDiv.style.display = 'block';
+        }
+    }
+</script>
+</body>
+</html>
