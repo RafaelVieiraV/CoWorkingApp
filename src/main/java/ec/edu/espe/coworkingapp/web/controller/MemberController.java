@@ -1,14 +1,15 @@
-package com.example.u1proyecto_grupob.web.controller;
+package ec.edu.espe.coworkingapp.web.controller;
 
-import com.example.u1proyecto_grupob.dto.MemberRequestDto;
-import com.example.u1proyecto_grupob.dto.MemberResponseDto;
-import com.example.u1proyecto_grupob.dto.BookingResponseDto;
-import com.example.u1proyecto_grupob.service.MemberService;
-import com.example.u1proyecto_grupob.service.BookingService;
+import ec.edu.espe.coworkingapp.dto.request.MemberRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.MemberResponseDto;
+import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
+import ec.edu.espe.coworkingapp.service.MemberService;
+import ec.edu.espe.coworkingapp.service.BookingService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -50,7 +51,7 @@ public class MemberController {
     }
 
     @GetMapping("/{id}/bookings")
-    public ResponseEntity<List<BookingResponseDto>> getBookingsByMember(@PathVariable Long id) {
+    public ResponseEntity<List<BookingResponseDto>> findMemberBookings(@PathVariable Long id) {
         return ResponseEntity.ok(bookingService.findByMember(id));
     }
 }

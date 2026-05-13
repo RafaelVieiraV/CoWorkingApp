@@ -1,7 +1,7 @@
-package com.example.u1proyecto_grupob.service;
+package ec.edu.espe.coworkingapp.service;
 
-import com.example.u1proyecto_grupob.dto.MemberRequestDto;
-import com.example.u1proyecto_grupob.dto.MemberResponseDto;
+import ec.edu.espe.coworkingapp.dto.request.MemberRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.MemberResponseDto;
 import java.util.List;
 
 public interface MemberService {

@@ -1,8 +1,8 @@
-package com.example.u1proyecto_grupob.service;
+package ec.edu.espe.coworkingapp.service;
 
-import com.example.u1proyecto_grupob.domain.BookingStatus;
-import com.example.u1proyecto_grupob.dto.BookingRequestDto;
-import com.example.u1proyecto_grupob.dto.BookingResponseDto;
+import ec.edu.espe.coworkingapp.domain.BookingStatus;
+import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
+import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 import java.util.List;
 
 public interface BookingService {
