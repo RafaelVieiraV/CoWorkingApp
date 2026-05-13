@@ -2,10 +2,10 @@ spring:
   application:
     name: coworking-app
   datasource:
-    url: ${DB_URL:jdbc:h2:mem:coworkingdb;DB_CLOSE_DELAY=-1;MODE=MySQL}
-    username: ${DB_USER:sa}
-    password: ${DB_PASS:}
-    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
