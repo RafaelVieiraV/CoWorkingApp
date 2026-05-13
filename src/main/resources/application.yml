@@ -1,1 +1,23 @@
-spring.application.name=coworking-app
+spring:
+  application:
+    name: coworking-app
+  datasource:
+    url: jdbc:mysql://localhost:3306/coworking_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: "clave-super-secreta-de-256-bits-para-coworking-app-espe"
+  expiration-ms: 86400000
