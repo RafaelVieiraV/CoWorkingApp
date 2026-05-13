@@ -1,4 +1,5 @@
 package com.example.u1proyecto_grupob.domain;
 
-public class PlanType {
+public enum PlanType {
+    BASICO, ESTANDAR, PREMIUM
 }

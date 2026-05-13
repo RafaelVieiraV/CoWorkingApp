@@ -1,4 +1,5 @@
 package com.example.u1proyecto_grupob.domain;
 
-public class BookingStatus {
+public enum BookingStatus {
+    PENDIENTE, CONFIRMADA, CANCELADA
 }
