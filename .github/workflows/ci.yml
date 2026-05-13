@@ -24,7 +24,11 @@ jobs:
           MYSQL_DATABASE: coworking_db
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - name: Checkout código
@@ -45,9 +49,10 @@ jobs:
       - name: Ejecutar tests
         run: ./gradlew test --no-daemon
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/coworking_db?useSSL=false&serverTimezone=UTC
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/coworking_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: root
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
 
   docker:
     name: Build Docker Image
