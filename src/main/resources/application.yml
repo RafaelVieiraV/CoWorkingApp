@@ -6,12 +6,6 @@ spring:
     username: ${DB_USER:root}
     password: ${DB_PASS:root}
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-=======
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
