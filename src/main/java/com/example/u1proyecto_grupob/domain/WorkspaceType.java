@@ -1,4 +1,5 @@
 package com.example.u1proyecto_grupob.domain;
 
-public class WorkspaceType {
+public enum WorkspaceType {
+    ESCRITORIO, SALA_PRIVADA, SALA_REUNION, CABINA
 }
