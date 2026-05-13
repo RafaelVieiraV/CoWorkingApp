@@ -12,7 +12,9 @@ CREATE TABLE IF NOT EXISTS members (
     active BIT NOT NULL DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
-
+-- Documentación del esquema de base de datos
+-- Las tablas son creadas automáticamente por JPA/Hibernate
+-- Este archivo es solo referencia del diseño
 CREATE TABLE IF NOT EXISTS workspaces (
                                           id BIGINT AUTO_INCREMENT PRIMARY KEY,
                                           name VARCHAR(100) NOT NULL,
