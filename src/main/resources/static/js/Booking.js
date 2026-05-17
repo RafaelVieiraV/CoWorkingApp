@@ -184,8 +184,8 @@ function goToPage(page) {
 function openCreateModal() {
     document.getElementById('modalTitle').textContent = 'Nueva Reserva';
     document.getElementById('editingId').value = '';
-    document.getElementById('formMemberId').value = '';
-    document.getElementById('formWorkspaceId').value = '';
+    $('#formMemberId').val('').trigger('change');
+    $('#formWorkspaceId').val('').trigger('change');
     document.getElementById('formStartDatetime').value = '';
     document.getElementById('formEndDatetime').value = '';
     hideError();
@@ -195,8 +195,8 @@ function openCreateModal() {
 function openEditModal(b) {
     document.getElementById('modalTitle').textContent = 'Editar Reserva #' + b.id;
     document.getElementById('editingId').value = b.id;
-    document.getElementById('formMemberId').value = b.memberId || '';
-    document.getElementById('formWorkspaceId').value = b.workspaceId || '';
+    $('#formMemberId').val(b.memberId).trigger('change');
+    $('#formWorkspaceId').val(b.workspaceId).trigger('change');
     document.getElementById('formStartDatetime').value = toLocalInput(b.startDatetime);
     document.getElementById('formEndDatetime').value = toLocalInput(b.endDatetime);
     hideError();
@@ -294,8 +294,51 @@ async function confirmDelete() {
     } catch (e) { /* silenciar */ }
 }
 
+// ── Select2: cargar miembros y espacios ──
+
+async function loadMemberOptions() {
+    try {
+        var res = await fetch('/api/members/active', { headers: headers() });
+        if (!res.ok) return;
+        var members = await res.json();
+        var select = document.getElementById('formMemberId');
+        select.innerHTML = '<option value="">Buscar miembro...</option>';
+        members.forEach(function (m) {
+            var opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.fullName + ' (' + m.email + ')';
+            select.appendChild(opt);
+        });
+    } catch (e) { /* silenciar */ }
+}
+
+async function loadWorkspaceOptions() {
+    try {
+        var res = await fetch('/api/workspaces/available', { headers: headers() });
+        if (!res.ok) return;
+        var workspaces = await res.json();
+        var select = document.getElementById('formWorkspaceId');
+        select.innerHTML = '<option value="">Buscar espacio...</option>';
+        workspaces.forEach(function (w) {
+            var opt = document.createElement('option');
+            opt.value = w.id;
+            opt.textContent = w.name + ' - ' + (w.type || '') + ' (Piso ' + w.floor + ')';
+            select.appendChild(opt);
+        });
+    } catch (e) { /* silenciar */ }
+}
+
 // ── Init ──
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+    await Promise.all([loadMemberOptions(), loadWorkspaceOptions()]);
+
+    $('.select2-field').select2({
+        placeholder: 'Buscar...',
+        allowClear: true,
+        language: 'es',
+        dropdownParent: $('#bookingModal')
+    });
+
     loadBookings(0);
 });

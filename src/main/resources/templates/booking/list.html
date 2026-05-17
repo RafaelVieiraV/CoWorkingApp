@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
     <link th:href="@{/css/booking.css}" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
     <title>Reservas - CoWorking App</title>
 </head>
 <body>
@@ -72,12 +73,16 @@
                 <div id="modalError" class="error-msg" style="display:none;"></div>
                 <input type="hidden" id="editingId"/>
                 <div class="form-group">
-                    <label>Miembro (ID)</label>
-                    <input type="number" id="formMemberId" class="form-input" placeholder="ID del miembro"/>
+                    <label>Miembro</label>
+                    <select id="formMemberId" class="form-input select2-field" style="width:100%">
+                        <option value="">Buscar miembro...</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>Espacio (ID)</label>
-                    <input type="number" id="formWorkspaceId" class="form-input" placeholder="ID del espacio"/>
+                    <label>Espacio</label>
+                    <select id="formWorkspaceId" class="form-input select2-field" style="width:100%">
+                        <option value="">Buscar espacio...</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Fecha/Hora Inicio</label>
@@ -110,6 +115,9 @@
     </main>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/es.js"></script>
 <script th:src="@{/js/booking.js}"></script>
 </body>
 </html>

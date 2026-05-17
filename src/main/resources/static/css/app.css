@@ -330,3 +330,40 @@
     min-height: 80px;
     resize: vertical;
 }
+
+/* ── Select2 overrides ── */
+
+.select2-container--default .select2-selection--single {
+    background: #f2f2f2;
+    border: none;
+    border-radius: 10px;
+    height: 44px;
+    padding: 6px 8px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 30px;
+    color: #333;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 42px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #999;
+}
+
+.select2-dropdown {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+}
+
+.select2-results__option--highlighted[aria-selected] {
+    background: #E37B58 !important;
+}
