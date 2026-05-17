@@ -1,7 +1,6 @@
 package ec.edu.espe.coworkingapp.domain;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "workspaces")
@@ -11,19 +10,20 @@ public class Workspace {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private WorkspaceType type;
 
     @Column(nullable = false)
     private Integer capacity;
 
-    @Column(name = "price_per_hour", precision = 8, scale = 2)
-    private BigDecimal pricePerHour;
+    @Column(name = "price_per_hour", nullable = false)
+    private Double pricePerHour;
 
-    @Column
+    @Column(name = "floor", nullable = false)
     private Integer floor;
 
     @Column(nullable = false)
@@ -32,7 +32,7 @@ public class Workspace {
     @Column(length = 255)
     private String description;
 
-    public enum WorkspaceType { DESK, OFFICE, MEETING_ROOM, EVENT_HALL }
+    public Workspace() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -42,8 +42,8 @@ public class Workspace {
     public void setType(WorkspaceType type) { this.type = type; }
     public Integer getCapacity() { return capacity; }
     public void setCapacity(Integer capacity) { this.capacity = capacity; }
-    public BigDecimal getPricePerHour() { return pricePerHour; }
-    public void setPricePerHour(BigDecimal v) { this.pricePerHour = v; }
+    public Double getPricePerHour() { return pricePerHour; }
+    public void setPricePerHour(Double pricePerHour) { this.pricePerHour = pricePerHour; }
     public Integer getFloor() { return floor; }
     public void setFloor(Integer floor) { this.floor = floor; }
     public Boolean getAvailable() { return available; }

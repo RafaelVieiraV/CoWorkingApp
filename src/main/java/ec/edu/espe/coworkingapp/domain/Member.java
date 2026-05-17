@@ -14,26 +14,26 @@ public class Member {
     @Column(name = "full_name", nullable = false, length = 120)
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
-    @Column(length = 20)
+    @Column(name = "phone", length = 20)
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "plan_type")
+    @Column(name = "plan_type", nullable = false)
     private PlanType planType;
 
-    @Column(name = "monthly_hours_quota")
+    @Column(name = "monthly_hours_quota", nullable = false)
     private Integer monthlyHoursQuota;
 
-    @Column(nullable = false)
+    @Column(name = "active", nullable = false)
     private Boolean active = true;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    public enum PlanType { BASIC, STANDARD, PREMIUM }
+    public Member() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -46,7 +46,7 @@ public class Member {
     public PlanType getPlanType() { return planType; }
     public void setPlanType(PlanType planType) { this.planType = planType; }
     public Integer getMonthlyHoursQuota() { return monthlyHoursQuota; }
-    public void setMonthlyHoursQuota(Integer v) { this.monthlyHoursQuota = v; }
+    public void setMonthlyHoursQuota(Integer monthlyHoursQuota) { this.monthlyHoursQuota = monthlyHoursQuota; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
