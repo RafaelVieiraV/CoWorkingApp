@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - CoWorking App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <style>
+        * { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
+
+        html, body {
+            margin: 0; padding: 0; width: 100%;
+            background: #fff; height: 100vh;
+        }
+
+        body { overflow: hidden; }
+
+        .login-page { display: flex; height: 100vh; width: 100vw; }
+
+        .sidebar-bar {
+            width: 50px; background: #E37B58;
+            flex-shrink: 0; position: relative; z-index: 5;
+        }
+
+        .login-left {
+            flex: 1.1; display: flex; align-items: flex-end;
+            justify-content: center; padding: 2rem;
+            background: #fff; overflow: visible;
+            position: relative; z-index: 1;
+        }
+
+        .login-left img {
+            width: 130%; height: auto; object-fit: contain;
+            position: absolute; bottom: -150px; left: -120px;
+        }
+
+        .login-right {
+            flex: 1.2; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 3rem 4rem; background: #fff; z-index: 10;
+        }
+
+        .login-right h1 { font-size: 56px; font-weight: 400; color: #1a1a1a; margin-bottom: 0.5rem; }
+
+        .subtitle {
+            font-size: 16px; color: #666; text-align: center;
+            margin-bottom: 2rem; line-height: 1.6; font-weight: 300;
+        }
+
+        .form-section { width: 100%; max-width: 350px; }
+        .form-section.hidden { display: none; }
+
+        .form-control {
+            border-radius: 50px; background: #f2f2f2; border: none;
+            padding: 14px 20px; font-family: 'Poppins', sans-serif;
+            font-size: 14px; color: #333;
+        }
+
+        .form-control:focus { background: #ebebeb; box-shadow: none; border: none; }
+        .form-control::placeholder { color: #999; }
+
+        .btn-start {
+            background: #E37B58; border: none; border-radius: 50px;
+            padding: 14px; font-family: 'Poppins', sans-serif;
+            font-size: 15px; font-weight: 500; color: #fff;
+            width: 100%; cursor: pointer; transition: background 0.2s;
+        }
+
+        .btn-start:hover { background: #d06843; }
+
+        .toggle-link { font-size: 13px; color: #666; text-align: center; margin-top: 1rem; }
+        .toggle-link a { color: #E37B58; font-weight: 500; text-decoration: none; cursor: pointer; }
+        .toggle-link a:hover { text-decoration: underline; }
+
+        .error-msg { color: #d9534f; font-size: 13px; text-align: center; margin-bottom: 1rem; display: none; }
+        .success-msg { color: #2D6A4F; font-size: 13px; text-align: center; margin-bottom: 1rem; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-page">
+    <div class="sidebar-bar"></div>
+
+    <div class="login-left">
+        <img th:src="@{/images/login-image.jpg}" alt="CoWorking illustration"/>
+    </div>
+
+    <div class="login-right">
+
+        <!-- LOGIN -->
+        <div id="loginSection" class="form-section">
+            <h1 class="text-center">Login</h1>
+            <p class="subtitle">
+                Portal de Recepción: Inicie sesión para<br/>
+                gestionar el inventario de puestos.
+            </p>
+
+            <div id="loginError" class="error-msg"></div>
+            <div id="loginSuccess" class="success-msg"></div>
+
+            <div class="mb-3">
+                <input type="email" id="loginEmail" class="form-control" placeholder="Email" required/>
+            </div>
+            <div class="mb-4">
+                <input type="password" id="loginPassword" class="form-control" placeholder="Password" required/>
+            </div>
+            <button type="button" class="btn-start" onclick="doLogin()">Let's Start!</button>
+
+            <p class="toggle-link">
+                ¿No tienes una cuenta? <a onclick="toggleSection('register')">Regístrate</a>
+            </p>
+        </div>
+
+        <!-- REGISTRO -->
+        <div id="registerSection" class="form-section hidden">
+            <h1 class="text-center">Registro</h1>
+            <p class="subtitle">
+                Crea tu cuenta de administrador<br/>
+                para acceder al sistema.
+            </p>
+
+            <div id="registerError" class="error-msg"></div>
+            <div id="registerSuccess" class="success-msg"></div>
+
+            <div class="mb-3">
+                <input type="email" id="regEmail" class="form-control" placeholder="Email" required/>
+            </div>
+            <div class="mb-3">
+                <input type="password" id="regPassword" class="form-control" placeholder="Password" required/>
+            </div>
+            <div class="mb-4">
+                <input type="password" id="regConfirm" class="form-control" placeholder="Confirmar Password" required/>
+            </div>
+            <button type="button" class="btn-start" onclick="doRegister()">Crear cuenta</button>
+
+            <p class="toggle-link">
+                ¿Ya tienes cuenta? <a onclick="toggleSection('login')">Inicia sesión</a>
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script th:src="@{/js/auth.js}"></script>
+</body>
+</html>
