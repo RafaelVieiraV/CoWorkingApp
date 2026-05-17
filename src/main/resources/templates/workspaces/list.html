@@ -2,6 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
     <title>Espacios - CoWorking App</title>
 </head>
 <body>
@@ -10,9 +11,120 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main class="main-content">
-        <!-- contenido de espacios -->
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Espacios de Trabajo</h1>
+                <p class="page-subtitle">Gestión de espacios del coworking</p>
+            </div>
+            <button class="btn-primary" onclick="openCreateModal()">
+                <i class="bi bi-plus-lg"></i> Nuevo Espacio
+            </button>
+        </div>
+
+        <div class="filters-bar">
+            <input type="text" id="searchName" class="filter-input" placeholder="Buscar por nombre..."/>
+            <select id="filterType" class="filter-input" onchange="applyFilters()">
+                <option value="">Todos los tipos</option>
+                <option value="DESK">Escritorio</option>
+                <option value="PRIVATE_OFFICE">Oficina Privada</option>
+                <option value="MEETING_ROOM">Sala de Reunión</option>
+            </select>
+            <select id="filterAvailable" class="filter-input" onchange="applyFilters()">
+                <option value="">Todos</option>
+                <option value="available">Disponibles</option>
+            </select>
+            <button class="btn-secondary" onclick="applyFilters()">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            <button class="btn-ghost" onclick="clearFilters()">Limpiar</button>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Capacidad</th>
+                    <th>$/Hora</th>
+                    <th>Piso</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="workspacesBody">
+                <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+
+        <!-- Modal Crear/Editar -->
+        <div id="wsModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Nuevo Espacio</h2>
+                    <button class="btn-close-modal" onclick="closeModal()">&times;</button>
+                </div>
+                <div id="modalError" class="error-msg" style="display:none;"></div>
+                <input type="hidden" id="editingId"/>
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="formName" class="form-input" placeholder="Ej: Sala A1"/>
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="formType" class="form-input">
+                        <option value="">Seleccione...</option>
+                        <option value="DESK">Escritorio</option>
+                        <option value="PRIVATE_OFFICE">Oficina Privada</option>
+                        <option value="MEETING_ROOM">Sala de Reunión</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group form-half">
+                        <label>Capacidad</label>
+                        <input type="number" id="formCapacity" class="form-input" min="1" placeholder="Ej: 8"/>
+                    </div>
+                    <div class="form-group form-half">
+                        <label>Precio/Hora ($)</label>
+                        <input type="number" id="formPrice" class="form-input" min="0" step="0.01" placeholder="Ej: 15.00"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Piso</label>
+                    <input type="number" id="formFloor" class="form-input" placeholder="Ej: 2"/>
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <textarea id="formDescription" class="form-input form-textarea" placeholder="Opcional"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button class="btn-primary" onclick="saveWorkspace()">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar -->
+        <div id="deleteModal" class="modal-overlay hidden">
+            <div class="modal-content modal-sm">
+                <h2>¿Eliminar espacio?</h2>
+                <p class="modal-text">Esta acción no se puede deshacer.</p>
+                <input type="hidden" id="deleteId"/>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+                    <button class="btn-danger" onclick="confirmDelete()">Eliminar</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 </div>
 
+<script th:src="@{/js/workspace.js}"></script>
 </body>
 </html>
