@@ -37,7 +37,7 @@ async function doLogin() {
             return;
         }
 
-        localStorage.setItem('token', data.token);
+        document.cookie = `jwt=${data.token}; path=/; max-age=86400`;
         showMsg('loginSuccess', '¡Bienvenido! Redirigiendo...');
         setTimeout(() => window.location.href = '/dashboard', 1500);
     } catch {
