@@ -18,7 +18,7 @@ function headers() {
 }
 
 function planLabel(plan) {
-    var map = { BASIC: 'Básico', PREMIUM: 'Premium', ENTERPRISE: 'Empresarial' };
+    var map = { BASICO: 'Básico', ESTANDAR: 'Estándar', PREMIUM: 'Premium' };
     return map[plan] || plan || '-';
 }
 
