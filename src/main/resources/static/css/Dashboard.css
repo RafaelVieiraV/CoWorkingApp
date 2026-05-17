@@ -158,6 +158,9 @@
 
 .mini-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    min-height: 120px;
+    max-height: 250px;
 }
 
 .mini-table {
@@ -258,6 +261,9 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    max-height: 150px;
+    min-height: 150px;
+    overflow-y: auto;
 }
 
 .activity-item {
