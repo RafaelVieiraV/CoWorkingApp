@@ -18,7 +18,7 @@ function headers() {
 }
 
 function typeLabel(type) {
-    var map = { DESK: 'Escritorio', PRIVATE_OFFICE: 'Oficina Privada', MEETING_ROOM: 'Sala de Reunión' };
+    var map = { ESCRITORIO: 'Escritorio', SALA_PRIVADA: 'Sala Privada', SALA_REUNION: 'Sala de Reunión', CABINA: 'Cabina' };
     return map[type] || type || '-';
 }
 
