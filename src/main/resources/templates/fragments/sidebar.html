@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<aside th:fragment="sidebar" class="sidebar">
+    <nav class="sidebar-nav">
+        <a th:href="@{/dashboard}" class="sidebar-link"
+           th:classappend="${activePage == 'dashboard'} ? 'active'">
+            <i class="bi bi-house-door-fill"></i>
+        </a>
+        <a th:href="@{/members}" class="sidebar-link"
+           th:classappend="${activePage == 'members'} ? 'active'">
+            <i class="bi bi-people-fill"></i>
+        </a>
+        <a th:href="@{/workspaces}" class="sidebar-link"
+           th:classappend="${activePage == 'workspaces'} ? 'active'">
+            <i class="bi bi-display"></i>
+        </a>
+        <a th:href="@{/bookings}" class="sidebar-link"
+           th:classappend="${activePage == 'bookings'} ? 'active'">
+            <i class="bi bi-calendar-check"></i>
+        </a>
+        <a th:href="@{/reports}" class="sidebar-link"
+           th:classappend="${activePage == 'reports'} ? 'active'">
+            <i class="bi bi-list-task"></i>
+        </a>
+    </nav>
+</aside>
+
+</body>
+</html>
