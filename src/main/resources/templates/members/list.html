@@ -2,6 +2,7 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
     <title>Miembros - CoWorking App</title>
 </head>
 <body>
@@ -10,9 +11,109 @@
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <main class="main-content">
-        <!-- contenido de miembros -->
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Miembros</h1>
+                <p class="page-subtitle">Gestión de miembros del coworking</p>
+            </div>
+            <button class="btn-primary" onclick="openCreateModal()">
+                <i class="bi bi-plus-lg"></i> Nuevo Miembro
+            </button>
+        </div>
+
+        <div class="filters-bar">
+            <input type="text" id="searchName" class="filter-input" placeholder="Buscar por nombre..."/>
+            <select id="filterActive" class="filter-input" onchange="applyFilters()">
+                <option value="">Todos</option>
+                <option value="active">Activos</option>
+            </select>
+            <button class="btn-secondary" onclick="applyFilters()">
+                <i class="bi bi-search"></i> Buscar
+            </button>
+            <button class="btn-ghost" onclick="clearFilters()">Limpiar</button>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Teléfono</th>
+                    <th>Plan</th>
+                    <th>Cupo (h)</th>
+                    <th>Usadas (h)</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+                <tbody id="membersBody">
+                <tr><td colspan="9" class="text-center">Cargando...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+
+        <!-- Modal Crear/Editar -->
+        <div id="memberModal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Nuevo Miembro</h2>
+                    <button class="btn-close-modal" onclick="closeModal()">&times;</button>
+                </div>
+                <div id="modalError" class="error-msg" style="display:none;"></div>
+                <input type="hidden" id="editingId"/>
+                <div class="form-group">
+                    <label>Nombre completo</label>
+                    <input type="text" id="formFullName" class="form-input" placeholder="Nombre del miembro"/>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="formEmail" class="form-input" placeholder="correo@ejemplo.com"/>
+                </div>
+                <div class="form-group">
+                    <label>Teléfono</label>
+                    <input type="text" id="formPhone" class="form-input" placeholder="Opcional"/>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de plan</label>
+                    <select id="formPlanType" class="form-input">
+                        <option value="">Seleccione...</option>
+                        <option value="BASIC">Básico</option>
+                        <option value="PREMIUM">Premium</option>
+                        <option value="ENTERPRISE">Empresarial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cupo mensual (horas)</label>
+                    <input type="number" id="formQuota" class="form-input" placeholder="Ej: 40" min="1"/>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+                    <button class="btn-primary" onclick="saveMember()">Guardar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Eliminar -->
+        <div id="deleteModal" class="modal-overlay hidden">
+            <div class="modal-content modal-sm">
+                <h2>¿Eliminar miembro?</h2>
+                <p class="modal-text">Esta acción no se puede deshacer.</p>
+                <input type="hidden" id="deleteId"/>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeDeleteModal()">Cancelar</button>
+                    <button class="btn-danger" onclick="confirmDelete()">Eliminar</button>
+                </div>
+            </div>
+        </div>
+
     </main>
 </div>
 
+<script th:src="@{/js/member.js}"></script>
 </body>
 </html>
