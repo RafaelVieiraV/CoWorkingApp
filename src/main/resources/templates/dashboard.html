@@ -2,6 +2,8 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
+    <link th:href="@{/css/dashboard.css}" rel="stylesheet"/>
     <title>Dashboard - CoWorking App</title>
 </head>
 <body>
@@ -9,10 +11,137 @@
 <div class="app-layout">
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <main class="main-content">
-        <!-- contenido del dashboard -->
+    <main class="main-content dashboard-layout">
+
+        <!-- ═══ Columna principal ═══ -->
+        <div class="dash-main">
+
+            <!-- Banner de bienvenida -->
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h1>Bienvenido de vuelta</h1>
+                    <p>Aquí tienes el resumen de hoy en tu coworking</p>
+                </div>
+                <div class="welcome-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+            </div>
+
+            <!-- Tarjetas de resumen -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon bg-orange">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statMembers">-</span>
+                        <span class="stat-label">Miembros activos</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue">
+                        <i class="bi bi-display"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statWorkspaces">-</span>
+                        <span class="stat-label">Espacios disponibles</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon bg-green">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statBookingsToday">-</span>
+                        <span class="stat-label">Reservas hoy</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon bg-yellow">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="statPending">-</span>
+                        <span class="stat-label">Pendientes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservas de hoy -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Reservas de hoy</h2>
+                    <a th:href="@{/bookings}" class="link-all">Ver todas <i class="bi bi-arrow-right"></i></a>
+                </div>
+                <div class="mini-table-container">
+                    <table class="mini-table">
+                        <thead>
+                        <tr>
+                            <th>Miembro</th>
+                            <th>Espacio</th>
+                            <th>Horario</th>
+                            <th>Estado</th>
+                        </tr>
+                        </thead>
+                        <tbody id="todayBookings">
+                        <tr><td colspan="4" class="empty-mini">Sin reservas para hoy</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ═══ Panel derecho (perfil) ═══ -->
+        <div class="dash-sidebar">
+
+            <!-- Perfil del admin -->
+            <div class="profile-card">
+                <div class="profile-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <h3 class="profile-name" id="adminEmail">admin@coworking.com</h3>
+                <span class="profile-role">Administrador</span>
+                <button class="btn-logout" onclick="logout()">
+                    <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+                </button>
+            </div>
+
+            <!-- Actividad reciente -->
+            <div class="section-card">
+                <h2 class="section-title-sm">Actividad reciente</h2>
+                <div class="activity-list" id="recentActivity">
+                    <div class="activity-item">
+                        <div class="activity-dot dot-green"></div>
+                        <div class="activity-text">
+                            <span class="activity-desc">Sin actividad reciente</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ocupación rápida -->
+            <div class="section-card">
+                <h2 class="section-title-sm">Ocupación de espacios</h2>
+                <div class="occupancy-bar-container">
+                    <div class="occupancy-bar">
+                        <div class="occupancy-fill" id="occupancyFill" style="width: 0%"></div>
+                    </div>
+                    <div class="occupancy-labels">
+                        <span id="occupancyText">0 / 0 ocupados</span>
+                        <span id="occupancyPercent">0%</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </main>
 </div>
 
+<script th:src="@{/js/dashboard.js}"></script>
 </body>
 </html>
