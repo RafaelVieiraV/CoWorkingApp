@@ -1,14 +1,17 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layouts/base}">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Miembros</title>
+    <th:block th:replace="~{fragments/head :: head}"/>
+    <title>Miembros - CoWorking App</title>
 </head>
 <body>
 
-<div layout:fragment="content">
-    <h1>Miembros</h1>
+<div class="app-layout">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main class="main-content">
+        <!-- contenido de miembros -->
+    </main>
 </div>
 
 </body>
