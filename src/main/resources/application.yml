@@ -2,9 +2,9 @@ spring:
   application:
     name: coworking-app
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
+    url: jdbc:postgresql://dpg-d82ejefavr4c73dq1aag-a.oregon-postgres.render.com/coworking_db_doaz
+    username: coworking_db_doaz_user
+    password: V0cZsYd8fYrX8FqL8XMKP4pMVXkEpuCQ
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
