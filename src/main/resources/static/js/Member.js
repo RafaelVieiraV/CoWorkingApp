@@ -37,6 +37,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(members) {
@@ -237,8 +245,16 @@ async function deactivateMember(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok || res.status === 204) loadMembers(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok || res.status === 204) {
+            showAlert('Miembro desactivado', 'success');
+            loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo desactivar el miembro', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Delete ──
@@ -261,9 +277,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Miembro eliminado', 'success');
             loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar el miembro', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Init ──

@@ -37,6 +37,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(workspaces) {
@@ -257,13 +265,14 @@ async function disableWorkspace(id) {
             headers: headers()
         });
         if (res.ok || res.status === 204) {
+            showAlert('Espacio deshabilitado', 'success');
             loadWorkspaces(currentPage);
         } else {
             var data = await res.json();
-            showToast(data.message || 'No se pudo deshabilitar el espacio', 'error');
+            showAlert(data.message || 'No se pudo deshabilitar el espacio', 'error');
         }
     } catch (e) {
-        showToast('Error de conexión', 'error');
+        showAlert('Error de conexión', 'error');
     }
 }
 
@@ -287,9 +296,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Espacio eliminado', 'success');
             loadWorkspaces(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar el espacio', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Init ──

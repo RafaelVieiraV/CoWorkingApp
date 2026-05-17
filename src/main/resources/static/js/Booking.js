@@ -54,6 +54,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(bookings) {
@@ -255,8 +263,16 @@ async function confirmBooking(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok) loadBookings(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok) {
+            showAlert('Reserva confirmada', 'success');
+            loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo confirmar', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 async function cancelBooking(id) {
@@ -265,8 +281,16 @@ async function cancelBooking(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok) loadBookings(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok) {
+            showAlert('Reserva cancelada', 'success');
+            loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo cancelar', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Delete ──
@@ -289,9 +313,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Reserva eliminada', 'success');
             loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Select2: cargar miembros y espacios ──

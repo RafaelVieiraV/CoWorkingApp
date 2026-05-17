@@ -246,7 +246,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
         if (hasActive) {
 
-            throw new BusinessConflictException("El workspace tiene reservas activas, cancÃ©lalas antes de deshabilitarlo");
+            throw new BusinessConflictException("El workspace tiene reservas activas, cancelalas antes de deshabilitarlo");
 
         }
 
