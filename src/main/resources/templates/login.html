@@ -6,76 +6,7 @@
     <title>Login - CoWorking App</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <style>
-        * { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; }
-
-        html, body {
-            margin: 0; padding: 0; width: 100%;
-            background: #fff; height: 100vh;
-        }
-
-        body { overflow: hidden; }
-
-        .login-page { display: flex; height: 100vh; width: 100vw; }
-
-        .sidebar-bar {
-            width: 50px; background: #E37B58;
-            flex-shrink: 0; position: relative; z-index: 5;
-        }
-
-        .login-left {
-            flex: 1.1; display: flex; align-items: flex-end;
-            justify-content: center; padding: 2rem;
-            background: #fff; overflow: visible;
-            position: relative; z-index: 1;
-        }
-
-        .login-left img {
-            width: 130%; height: auto; object-fit: contain;
-            position: absolute; bottom: -150px; left: -120px;
-        }
-
-        .login-right {
-            flex: 1.2; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 3rem 4rem; background: #fff; z-index: 10;
-        }
-
-        .login-right h1 { font-size: 56px; font-weight: 400; color: #1a1a1a; margin-bottom: 0.5rem; }
-
-        .subtitle {
-            font-size: 16px; color: #666; text-align: center;
-            margin-bottom: 2rem; line-height: 1.6; font-weight: 300;
-        }
-
-        .form-section { width: 100%; max-width: 350px; }
-        .form-section.hidden { display: none; }
-
-        .form-control {
-            border-radius: 50px; background: #f2f2f2; border: none;
-            padding: 14px 20px; font-family: 'Poppins', sans-serif;
-            font-size: 14px; color: #333;
-        }
-
-        .form-control:focus { background: #ebebeb; box-shadow: none; border: none; }
-        .form-control::placeholder { color: #999; }
-
-        .btn-start {
-            background: #E37B58; border: none; border-radius: 50px;
-            padding: 14px; font-family: 'Poppins', sans-serif;
-            font-size: 15px; font-weight: 500; color: #fff;
-            width: 100%; cursor: pointer; transition: background 0.2s;
-        }
-
-        .btn-start:hover { background: #d06843; }
-
-        .toggle-link { font-size: 13px; color: #666; text-align: center; margin-top: 1rem; }
-        .toggle-link a { color: #E37B58; font-weight: 500; text-decoration: none; cursor: pointer; }
-        .toggle-link a:hover { text-decoration: underline; }
-
-        .error-msg { color: #d9534f; font-size: 13px; text-align: center; margin-bottom: 1rem; display: none; }
-        .success-msg { color: #2D6A4F; font-size: 13px; text-align: center; margin-bottom: 1rem; display: none; }
-    </style>
+    <link th:href="@{/css/login.css}" rel="stylesheet"/>
 </head>
 <body>
 
