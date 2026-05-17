@@ -260,10 +260,10 @@ async function disableWorkspace(id) {
             loadWorkspaces(currentPage);
         } else {
             var data = await res.json();
-            alert(data.message || 'No se pudo deshabilitar el espacio');
+            showToast(data.message || 'No se pudo deshabilitar el espacio', 'error');
         }
     } catch (e) {
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     }
 }
 
