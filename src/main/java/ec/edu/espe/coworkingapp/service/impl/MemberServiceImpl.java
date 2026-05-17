@@ -189,7 +189,7 @@ public class MemberServiceImpl implements MemberService {
 
         if (activeBookingsCount > 0) {
 
-            throw new BusinessConflictException("El miembro tiene reservas activas, cancÃ©lalas antes de desactivarlo");
+            throw new BusinessConflictException("El miembro tiene reservas activas, debes cancelarlas antes de desactivarlo");
 
         }
 
