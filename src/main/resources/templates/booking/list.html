@@ -1,8 +1,8 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
-    <link th:href="@{/css/booking.css}" rel="stylesheet"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
     <title>Reservas - CoWorking App</title>
 </head>
@@ -27,9 +27,9 @@
             <input type="text" id="searchId" class="filter-input" placeholder="Buscar por ID..."/>
             <select id="filterStatus" class="filter-input" onchange="applyFilters()">
                 <option value="">Todos los estados</option>
-                <option value="PENDING">Pendiente</option>
-                <option value="CONFIRMED">Confirmada</option>
-                <option value="CANCELLED">Cancelada</option>
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="CONFIRMADA">Confirmada</option>
+                <option value="CANCELADA">Cancelada</option>
             </select>
             <button class="btn-secondary" onclick="applyFilters()">
                 <i class="bi bi-search"></i> Buscar

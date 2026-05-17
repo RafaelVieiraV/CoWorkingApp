@@ -19,9 +19,9 @@ function headers() {
 
 function statusBadge(status) {
     const map = {
-        PENDING:   { label: 'Pendiente',  css: 'badge-pending' },
-        CONFIRMED: { label: 'Confirmada', css: 'badge-confirmed' },
-        CANCELLED: { label: 'Cancelada',  css: 'badge-cancelled' }
+        PENDIENTE:  { label: 'Pendiente',  css: 'badge-pending' },
+        CONFIRMADA: { label: 'Confirmada', css: 'badge-confirmed' },
+        CANCELADA:  { label: 'Cancelada',  css: 'badge-cancelled' }
     };
     const s = map[status] || { label: status, css: '' };
     return '<span class="badge ' + s.css + '">' + s.label + '</span>';
@@ -68,7 +68,7 @@ function renderTable(bookings) {
         var safeB = JSON.stringify(b).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
 
         var actions = '';
-        if (b.status === 'PENDING') {
+        if (b.status === 'PENDIENTE') {
             actions +=
                 '<button class="btn-action confirm" title="Confirmar" onclick="confirmBooking(' + b.id + ')">' +
                 '<i class="bi bi-check-lg"></i>' +
