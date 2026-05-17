@@ -256,8 +256,15 @@ async function disableWorkspace(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok || res.status === 204) loadWorkspaces(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok || res.status === 204) {
+            loadWorkspaces(currentPage);
+        } else {
+            var data = await res.json();
+            alert(data.message || 'No se pudo deshabilitar el espacio');
+        }
+    } catch (e) {
+        alert('Error de conexión');
+    }
 }
 
 // ── Delete ──
