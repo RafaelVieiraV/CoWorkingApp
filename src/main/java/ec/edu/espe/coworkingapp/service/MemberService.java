@@ -16,4 +16,5 @@ public interface MemberService {
     void delete(Long id);
     List<MemberResponseDto> findAllActive();
     void deactivate(Long id);
+    void activate(Long id);
 }

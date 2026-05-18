@@ -7,6 +7,7 @@ public class MemberRequestDto {
 
     @NotBlank(message = "El nombre es obligatorio")
     @Size(min = 3, max = 120, message = "El nombre debe tener entre 3 y 120 caracteres")
+    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$", message = "El nombre solo puede contener letras y espacios")
     private String fullName;
 
     @NotBlank(message = "El email es obligatorio")
@@ -14,6 +15,7 @@ public class MemberRequestDto {
     @Size(max = 150)
     private String email;
 
+    @Pattern(regexp = "^[0-9]+$", message = "El teléfono solo puede contener números enteros")
     private String phone;
 
     @NotNull(message = "El tipo de plan es obligatorio")

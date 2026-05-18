@@ -54,6 +54,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(bookings) {
@@ -115,55 +123,32 @@ function renderPagination() {
 
 async function loadBookings(page) {
     currentPage = page || 0;
+    var searchId = document.getElementById('searchId') ? document.getElementById('searchId').value.trim() : '';
+    var statusFilter = document.getElementById('filterStatus') ? document.getElementById('filterStatus').value : '';
     try {
-        var res = await fetch('/api/bookings/search?page=' + currentPage + '&size=10', { headers: headers() });
+        var url = '/api/bookings/search?page=' + currentPage + '&size=10';
+        if (searchId) {
+            url += '&id=' + encodeURIComponent(searchId);
+        }
+        var res = await fetch(url, { headers: headers() });
         if (!res.ok) throw new Error();
         var data = await res.json();
         totalPages = data.totalPages;
-        renderTable(data.content);
+        var contentData = data.content;
+        if (statusFilter) {
+            contentData = contentData.filter(b => b.status === statusFilter);
+        }
+        renderTable(contentData);
         renderPagination();
     } catch (e) {
-        document.getElementById('bookingsBody').innerHTML =
-            '<tr><td colspan="10" class="empty-state">Error al cargar reservas</td></tr>';
+        var tb = document.getElementById('bookingsBody');
+        if(tb) tb.innerHTML = '<tr><td colspan="10" class="empty-state">Error al cargar reservas</td></tr>';
     }
 }
 
 // ── Filters ──
 
 async function applyFilters() {
-    var searchId = document.getElementById('searchId').value.trim();
-    var status = document.getElementById('filterStatus').value;
-
-    if (searchId) {
-        try {
-            var res = await fetch('/api/bookings/search?id=' + searchId + '&page=0&size=10', { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = data.totalPages;
-            currentPage = 0;
-            renderTable(data.content);
-            renderPagination();
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
-    if (status) {
-        try {
-            var res = await fetch('/api/bookings/status/' + status, { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = 1;
-            currentPage = 0;
-            renderTable(data);
-            document.getElementById('pagination').innerHTML = '';
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
     loadBookings(0);
 }
 
@@ -174,8 +159,6 @@ function clearFilters() {
 }
 
 function goToPage(page) {
-    var status = document.getElementById('filterStatus').value;
-    if (status) return;
     loadBookings(page);
 }
 
@@ -255,8 +238,16 @@ async function confirmBooking(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok) loadBookings(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok) {
+            showAlert('Reserva confirmada', 'success');
+            loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo confirmar', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 async function cancelBooking(id) {
@@ -265,8 +256,16 @@ async function cancelBooking(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok) loadBookings(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok) {
+            showAlert('Reserva cancelada', 'success');
+            loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo cancelar', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Delete ──
@@ -289,9 +288,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Reserva eliminada', 'success');
             loadBookings(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Select2: cargar miembros y espacios ──
@@ -342,3 +348,5 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     loadBookings(0);
 });
+
+

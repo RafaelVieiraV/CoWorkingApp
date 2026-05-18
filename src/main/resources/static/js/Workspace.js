@@ -37,6 +37,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(workspaces) {
@@ -95,71 +103,37 @@ function renderPagination() {
 
 async function loadWorkspaces(page) {
     currentPage = page || 0;
+    var name = document.getElementById('searchName') ? document.getElementById('searchName').value.trim() : '';
+    var availableFilter = document.getElementById('filterAvailable') ? document.getElementById('filterAvailable').value : '';
     try {
-        var res = await fetch('/api/workspaces/search?page=' + currentPage + '&size=10', { headers: headers() });
+        var url = '/api/workspaces/search?page=' + currentPage + '&size=10';
+        if (availableFilter === 'available') {
+            url = '/api/workspaces/available';
+        } else if (name) {
+            url += '&name=' + encodeURIComponent(name);
+        }
+        var res = await fetch(url, { headers: headers() });
         if (!res.ok) throw new Error();
         var data = await res.json();
-        totalPages = data.totalPages;
-        renderTable(data.content);
-        renderPagination();
+        
+        if (availableFilter === 'available') {
+            totalPages = 1;
+            renderTable(data);
+            var pg = document.getElementById('pagination'); if(pg) pg.innerHTML = '';
+        } else {
+            totalPages = data.totalPages;
+            renderTable(data.content);
+            renderPagination();
+        }
     } catch (e) {
-        document.getElementById('workspacesBody').innerHTML =
-            '<tr><td colspan="8" class="empty-state">Error al cargar espacios</td></tr>';
+        var tb = document.getElementById('workspacesBody');
+        if(tb) tb.innerHTML = '<tr><td colspan="8" class="empty-state">Error al cargar espacios</td></tr>';
     }
 }
 
 // ── Filters ──
 
 async function applyFilters() {
-    var name = document.getElementById('searchName').value.trim();
-    var type = document.getElementById('filterType').value;
-    var availableFilter = document.getElementById('filterAvailable').value;
-
-    if (availableFilter === 'available') {
-        try {
-            var res = await fetch('/api/workspaces/available', { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = 1;
-            currentPage = 0;
-            renderTable(data);
-            document.getElementById('pagination').innerHTML = '';
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
-    if (type) {
-        try {
-            var res = await fetch('/api/workspaces/type/' + type, { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = 1;
-            currentPage = 0;
-            renderTable(data);
-            document.getElementById('pagination').innerHTML = '';
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
-    if (name) {
-        try {
-            var res = await fetch('/api/workspaces/search?name=' + encodeURIComponent(name) + '&page=0&size=10', { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = data.totalPages;
-            currentPage = 0;
-            renderTable(data.content);
-            renderPagination();
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
     loadWorkspaces(0);
 }
 
@@ -257,13 +231,14 @@ async function disableWorkspace(id) {
             headers: headers()
         });
         if (res.ok || res.status === 204) {
+            showAlert('Espacio deshabilitado', 'success');
             loadWorkspaces(currentPage);
         } else {
             var data = await res.json();
-            showToast(data.message || 'No se pudo deshabilitar el espacio', 'error');
+            showAlert(data.message || 'No se pudo deshabilitar el espacio', 'error');
         }
     } catch (e) {
-        showToast('Error de conexión', 'error');
+        showAlert('Error de conexión', 'error');
     }
 }
 
@@ -287,9 +262,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Espacio eliminado', 'success');
             loadWorkspaces(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar el espacio', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Init ──
@@ -297,3 +279,5 @@ async function confirmDelete() {
 document.addEventListener('DOMContentLoaded', function () {
     loadWorkspaces(0);
 });
+
+

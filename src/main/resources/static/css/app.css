@@ -315,6 +315,28 @@
     font-size: 14px;
 }
 
+/* ── Page alerts ── */
+
+.page-alert {
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-alert.alert-error {
+    background: #FFEBEE;
+    color: #C62828;
+}
+
+.page-alert.alert-success {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
 /* ── Form layout ── */
 
 .form-row {
