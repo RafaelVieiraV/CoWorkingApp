@@ -98,10 +98,8 @@ public class BookingServiceImpl implements BookingService {
 
         }
 
-        if (dto.getStartDatetime().isBefore(LocalDateTime.now())) {
-
+        if (dto.getStartDatetime().isBefore(LocalDateTime.now().minusMinutes(15))) {
             throw new BusinessConflictException("No se puede crear una reserva en el pasado");
-
         }
 
 
