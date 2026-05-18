@@ -37,7 +37,7 @@ public class MemberControllerTest {
         MemberRequestDto req = new MemberRequestDto();
         req.setFullName("John Doe");
         req.setEmail("john@example.com");
-        req.setPhone("1234567890");
+        req.setPhone("0912345678");
         req.setPlanType(PlanType.BASICO);
         req.setMonthlyHoursQuota(10);
         when(memberService.create(any())).thenReturn(new MemberResponseDto());
@@ -63,7 +63,7 @@ public class MemberControllerTest {
         MemberRequestDto req = new MemberRequestDto();
         req.setFullName("John Updated");
         req.setEmail("john@example.com");
-        req.setPhone("1234567890");
+        req.setPhone("0912345678");
         req.setPlanType(PlanType.ESTANDAR);
         req.setMonthlyHoursQuota(20);
         when(memberService.update(eq(1L), any())).thenReturn(new MemberResponseDto());

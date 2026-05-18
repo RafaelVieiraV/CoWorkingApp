@@ -3,6 +3,7 @@ import ec.edu.espe.coworkingapp.domain.WorkspaceType;
 import ec.edu.espe.coworkingapp.dto.request.WorkspaceRequestDto;
 import ec.edu.espe.coworkingapp.dto.response.WorkspaceResponseDto;
 import ec.edu.espe.coworkingapp.service.WorkspaceService;
+import ec.edu.espe.coworkingapp.service.BookingService;
 import ec.edu.espe.coworkingapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,8 @@ public class WorkspaceControllerTest {
     private MockMvc mockMvc;
     @MockBean
     private WorkspaceService workspaceService;
+    @MockBean
+    private BookingService bookingService;
     @MockBean
     private JwtUtil jwtUtil;
     private ObjectMapper objectMapper = new ObjectMapper();
