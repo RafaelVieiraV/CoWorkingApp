@@ -121,7 +121,11 @@ public class MemberController {
 
     }
 
-
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        memberService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/{id}/bookings")
 
@@ -132,4 +136,3 @@ public class MemberController {
     }
 
 }
-

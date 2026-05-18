@@ -37,6 +37,14 @@ function hideError() {
     document.getElementById('modalError').style.display = 'none';
 }
 
+function showAlert(msg, type) {
+    var el = document.getElementById('pageAlert');
+    el.className = 'page-alert alert-' + (type || 'error');
+    el.innerHTML = '<i class="bi ' + (type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill') + '"></i>' + msg;
+    el.style.display = 'flex';
+    setTimeout(function () { el.style.display = 'none'; }, 5000);
+}
+
 // ── Render ──
 
 function renderTable(members) {
@@ -56,11 +64,10 @@ function renderTable(members) {
             '</button>';
 
         if (m.active) {
-            actions +=
-                '<button class="btn-action cancel" title="Desactivar" onclick="deactivateMember(' + m.id + ')">' +
-                '<i class="bi bi-person-slash"></i>' +
-                '</button>';
-        }
+        actions += '<button class="btn-action cancel" title="Desactivar" onclick="deactivateMember(' + m.id + ')"><i class="bi bi-person-slash"></i></button>';
+    } else {
+        actions += '<button class="btn-action confirm" title="Activar" onclick="activateMember(' + m.id + ')"><i class="bi bi-person-check"></i></button>';
+    }
 
         actions +=
             '<button class="btn-action delete" title="Eliminar" onclick="openDeleteModal(' + m.id + ')">' +
@@ -96,6 +103,33 @@ function renderPagination() {
 
 async function loadMembers(page) {
     currentPage = page || 0;
+    var name = document.getElementById('searchName') ? document.getElementById('searchName').value.trim() : '';
+    var activeFilter = document.getElementById('filterActive') ? document.getElementById('filterActive').value : '';
+    try {
+        var url = '/api/members/search?page=' + currentPage + '&size=10';
+        if (activeFilter === 'active') {
+             url = '/api/members/active'; // Notice: active is not paginated natively in controller currently but it was treated previously
+        } else if (name) {
+             url += '&name=' + encodeURIComponent(name);
+        }
+        var res = await fetch(url, { headers: headers() });
+        if (!res.ok) throw new Error();
+        var data = await res.json();
+        if (activeFilter === 'active') {
+             totalPages = 1;
+             renderTable(data);
+             document.getElementById('pagination').innerHTML = '';
+        } else {
+             totalPages = data.totalPages;
+             renderTable(data.content);
+             renderPagination();
+        }
+    } catch (e) {
+        document.getElementById('membersBody').innerHTML = '<tr><td colspan="9" class="empty-state">Error al cargar miembros</td></tr>';
+    }
+}
+async function old_loadMembers(page) {
+    currentPage = page || 0;
     try {
         var res = await fetch('/api/members/search?page=' + currentPage + '&size=10', { headers: headers() });
         if (!res.ok) throw new Error();
@@ -112,39 +146,6 @@ async function loadMembers(page) {
 // ── Filters ──
 
 async function applyFilters() {
-    var name = document.getElementById('searchName').value.trim();
-    var activeFilter = document.getElementById('filterActive').value;
-
-    if (activeFilter === 'active') {
-        try {
-            var res = await fetch('/api/members/active', { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = 1;
-            currentPage = 0;
-            renderTable(data);
-            document.getElementById('pagination').innerHTML = '';
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
-    if (name) {
-        try {
-            var res = await fetch('/api/members/search?name=' + encodeURIComponent(name) + '&page=0&size=10', { headers: headers() });
-            if (!res.ok) throw new Error();
-            var data = await res.json();
-            totalPages = data.totalPages;
-            currentPage = 0;
-            renderTable(data.content);
-            renderPagination();
-        } catch (e) {
-            renderTable([]);
-        }
-        return;
-    }
-
     loadMembers(0);
 }
 
@@ -237,11 +238,37 @@ async function deactivateMember(id) {
             method: 'PATCH',
             headers: headers()
         });
-        if (res.ok || res.status === 204) loadMembers(currentPage);
-    } catch (e) { /* silenciar */ }
+        if (res.ok || res.status === 204) {
+            showAlert('Miembro desactivado', 'success');
+            loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo desactivar el miembro', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Delete ──
+
+async function activateMember(id) {
+    try {
+        var res = await fetch('/api/members/' + id + '/activate', {
+            method: 'PATCH',
+            headers: headers()
+        });
+        if (res.ok || res.status === 204) {
+            showAlert('Miembro activado', 'success');
+            loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo activar el miembro', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexion', 'error');
+    }
+}
 
 function openDeleteModal(id) {
     document.getElementById('deleteId').value = id;
@@ -261,9 +288,16 @@ async function confirmDelete() {
         });
         if (res.ok || res.status === 204) {
             closeDeleteModal();
+            showAlert('Miembro eliminado', 'success');
             loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            closeDeleteModal();
+            showAlert(data.message || 'No se pudo eliminar el miembro', 'error');
         }
-    } catch (e) { /* silenciar */ }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
 }
 
 // ── Init ──
@@ -271,3 +305,7 @@ async function confirmDelete() {
 document.addEventListener('DOMContentLoaded', function () {
     loadMembers(0);
 });
+
+
+
+

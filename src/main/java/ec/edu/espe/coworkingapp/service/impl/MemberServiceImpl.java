@@ -189,7 +189,7 @@ public class MemberServiceImpl implements MemberService {
 
         if (activeBookingsCount > 0) {
 
-            throw new BusinessConflictException("El miembro tiene reservas activas, cancÃ©lalas antes de desactivarlo");
+            throw new BusinessConflictException("El miembro tiene reservas activas, debes cancelarlas antes de desactivarlo");
 
         }
 
@@ -201,7 +201,18 @@ public class MemberServiceImpl implements MemberService {
 
     }
 
+    @Override
+    public void activate(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado con id: " + id));
 
+        if (Boolean.TRUE.equals(member.getActive())) {
+            throw new BusinessConflictException("El miembro ya se encuentra activo");
+        }
+
+        member.setActive(true);
+        memberRepository.save(member);
+    }
 
     private MemberResponseDto toResponse(Member m) {
 
