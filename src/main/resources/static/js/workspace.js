@@ -104,19 +104,28 @@ function renderPagination() {
 async function loadWorkspaces(page) {
     currentPage = page || 0;
     var name = document.getElementById('searchName') ? document.getElementById('searchName').value.trim() : '';
+    var typeFilter = document.getElementById('filterType') ? document.getElementById('filterType').value : '';
     var availableFilter = document.getElementById('filterAvailable') ? document.getElementById('filterAvailable').value : '';
+
     try {
         var url = '/api/workspaces/search?page=' + currentPage + '&size=10';
+        var isPlainList = false;
+
         if (availableFilter === 'available') {
             url = '/api/workspaces/available';
+            isPlainList = true;
+        } else if (typeFilter) {
+            url = '/api/workspaces/type/' + typeFilter;
+            isPlainList = true;
         } else if (name) {
             url += '&name=' + encodeURIComponent(name);
         }
+
         var res = await fetch(url, { headers: headers() });
         if (!res.ok) throw new Error();
         var data = await res.json();
-        
-        if (availableFilter === 'available') {
+
+        if (isPlainList) {
             totalPages = 1;
             renderTable(data);
             var pg = document.getElementById('pagination'); if(pg) pg.innerHTML = '';
@@ -176,6 +185,8 @@ function openEditModal(w) {
     document.getElementById('wsModal').classList.remove('hidden');
 }
 
+// ── Actions ──
+
 function closeModal() {
     document.getElementById('wsModal').classList.add('hidden');
 }
@@ -222,8 +233,6 @@ async function saveWorkspace() {
     }
 }
 
-// ── Disable ──
-
 async function disableWorkspace(id) {
     try {
         var res = await fetch('/api/workspaces/' + id + '/disable', {
@@ -241,8 +250,6 @@ async function disableWorkspace(id) {
         showAlert('Error de conexión', 'error');
     }
 }
-
-// ── Delete ──
 
 function openDeleteModal(id) {
     document.getElementById('deleteId').value = id;
@@ -279,5 +286,3 @@ async function confirmDelete() {
 document.addEventListener('DOMContentLoaded', function () {
     loadWorkspaces(0);
 });
-
-
