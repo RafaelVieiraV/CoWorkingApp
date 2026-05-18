@@ -11,7 +11,7 @@ public interface WorkspaceService {
     WorkspaceResponseDto create(WorkspaceRequestDto dto);
     WorkspaceResponseDto findById(Long id);
     List<WorkspaceResponseDto> findAll();
-    Page<WorkspaceResponseDto> searchPage(String name, Boolean available, Pageable pageable);
+    Page<WorkspaceResponseDto> searchPage(String name, Boolean available, WorkspaceType type, Pageable pageable);
     WorkspaceResponseDto update(Long id, WorkspaceRequestDto dto);
     void delete(Long id);
     List<WorkspaceResponseDto> findAllAvailable();

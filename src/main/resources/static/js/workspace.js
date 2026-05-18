@@ -114,18 +114,16 @@ async function loadWorkspaces(page) {
 
     try {
         var url = '/api/workspaces/search?page=' + currentPage + '&size=10';
-        var isPlainList = false;
 
         if (availableFilter) {
             url += '&available=' + encodeURIComponent(availableFilter);
         }
 
         if (typeFilter) {
-            // Note: If type filter is used, it overrides search currently because backend doesn't support combined type+page
-            // For now, let's fallback to the custom list if type is selected
-            url = '/api/workspaces/type/' + typeFilter;
-            isPlainList = true;
-        } else if (name) {
+            url += '&type=' + encodeURIComponent(typeFilter);
+        }
+
+        if (name) {
             url += '&name=' + encodeURIComponent(name);
         }
 
@@ -133,15 +131,9 @@ async function loadWorkspaces(page) {
         if (!res.ok) throw new Error();
         var data = await res.json();
 
-        if (isPlainList) {
-            totalPages = 1;
-            renderTable(data);
-            var pg = document.getElementById('pagination'); if(pg) pg.innerHTML = '';
-        } else {
-            totalPages = data.totalPages;
-            renderTable(data.content);
-            renderPagination();
-        }
+        totalPages = data.totalPages;
+        renderTable(data.content);
+        renderPagination();
     } catch (e) {
         var tb = document.getElementById('workspacesBody');
         if(tb) tb.innerHTML = '<tr><td colspan="8" class="empty-state">Error al cargar espacios</td></tr>';

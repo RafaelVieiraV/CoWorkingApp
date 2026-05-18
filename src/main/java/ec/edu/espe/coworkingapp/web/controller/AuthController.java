@@ -38,8 +38,11 @@ public class AuthController {
         // 2. Añadir la cookie a la respuesta que va hacia el cliente
         response.addCookie(jwtCookie);
 
-        // Mantenemos el retorno del JSON para no romper compatibilidades
-        return ResponseEntity.ok(Map.of("token", token));
+        // Mantenemos el retorno del JSON para no romper compatibilidades, pero añadimos el email
+        return ResponseEntity.ok(Map.of(
+            "token", token,
+            "email", request.getEmail()
+        ));
     }
 
     @PostMapping("/register")

@@ -177,7 +177,6 @@ public class WorkspaceServiceImpl implements WorkspaceService {
             throw new BusinessConflictException("El piso debe ser mayor a 0");
 
         }
-
         validateCapacityForType(dto.getType(), dto.getCapacity());
 
 
@@ -219,19 +218,13 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
 
     @Override
-    public Page<WorkspaceResponseDto> searchPage(String name, Boolean available, Pageable pageable) {
+    public Page<WorkspaceResponseDto> searchPage(String name, Boolean available, WorkspaceType type, Pageable pageable) {
         Page<Workspace> workspaces;
         boolean hasName = name != null && !name.trim().isEmpty();
 
-        if (hasName && available != null) {
-            workspaces = workspaceRepository.findByNameContainingIgnoreCaseAndAvailable(name, available, pageable);
-        } else if (hasName) {
-            workspaces = workspaceRepository.findByNameContainingIgnoreCase(name, pageable);
-        } else if (available != null) {
-            workspaces = workspaceRepository.findByAvailable(available, pageable);
-        } else {
-            workspaces = workspaceRepository.findAll(pageable);
-        }
+        String exactName = hasName ? name : null;
+        workspaces = workspaceRepository.searchWorkspaces(exactName, available, type, pageable);
+        
         return workspaces.map(this::toResponse);
     }
     @Override

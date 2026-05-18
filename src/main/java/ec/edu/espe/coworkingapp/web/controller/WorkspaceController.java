@@ -77,8 +77,9 @@ public class WorkspaceController {
     public ResponseEntity<Page<WorkspaceResponseDto>> search(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Boolean available,
+            @RequestParam(required = false) WorkspaceType type,
             @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(workspaceService.searchPage(name, available, pageable));
+        return ResponseEntity.ok(workspaceService.searchPage(name, available, type, pageable));
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {

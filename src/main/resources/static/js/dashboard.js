@@ -52,6 +52,7 @@ function statusBadge(status) {
 
 function logout() {
     document.cookie = 'jwt=; path=/; max-age=0';
+    localStorage.removeItem('userEmail');
     window.location.href = '/login';
 }
 
@@ -187,9 +188,10 @@ function renderRecentActivity(bookings) {
 // ── Init ──
 
 document.addEventListener('DOMContentLoaded', function () {
-    var email = getEmailFromToken();
+    var email = localStorage.getItem('userEmail') || getEmailFromToken();
     if (email) {
-        document.getElementById('adminEmail').textContent = email;
+        var el = document.getElementById('adminEmail');
+        if (el) el.textContent = email;
     }
     loadStats();
 });

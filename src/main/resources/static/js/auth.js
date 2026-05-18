@@ -38,6 +38,9 @@ async function doLogin() {
         }
 
         document.cookie = `jwt=${data.token}; path=/; max-age=86400`;
+        if (data.email) {
+            localStorage.setItem('userEmail', data.email);
+        }
         showMsg('loginSuccess', '¡Bienvenido! Redirigiendo...');
         setTimeout(() => window.location.href = '/dashboard', 1500);
     } catch {
