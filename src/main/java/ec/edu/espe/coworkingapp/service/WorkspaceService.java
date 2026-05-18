@@ -11,10 +11,11 @@ public interface WorkspaceService {
     WorkspaceResponseDto create(WorkspaceRequestDto dto);
     WorkspaceResponseDto findById(Long id);
     List<WorkspaceResponseDto> findAll();
-    List<WorkspaceResponseDto> findAllAvailable();
-    Page<WorkspaceResponseDto> searchPage(String name, Pageable pageable);
+    Page<WorkspaceResponseDto> searchPage(String name, Boolean available, Pageable pageable);
     WorkspaceResponseDto update(Long id, WorkspaceRequestDto dto);
     void delete(Long id);
-    void disable(Long id);
+    List<WorkspaceResponseDto> findAllAvailable();
     List<WorkspaceResponseDto> findByType(WorkspaceType type);
+    void disable(Long id);
+    void activate(Long id);
 }

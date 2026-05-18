@@ -147,10 +147,19 @@ public class MemberServiceImpl implements MemberService {
 
 
     @Override
-    public Page<MemberResponseDto> searchPage(String name, Pageable pageable) {
-        Page<Member> members = (name != null && !name.trim().isEmpty()) 
-            ? memberRepository.findByFullNameContainingIgnoreCase(name, pageable)
-            : memberRepository.findAll(pageable);
+    public Page<MemberResponseDto> searchPage(String name, Boolean active, Pageable pageable) {
+        Page<Member> members;
+        boolean hasName = name != null && !name.trim().isEmpty();
+
+        if (hasName && active != null) {
+            members = memberRepository.findByFullNameContainingIgnoreCaseAndActive(name, active, pageable);
+        } else if (hasName) {
+            members = memberRepository.findByFullNameContainingIgnoreCase(name, pageable);
+        } else if (active != null) {
+            members = memberRepository.findByActive(active, pageable);
+        } else {
+            members = memberRepository.findAll(pageable);
+        }
         return members.map(this::toResponse);
     }
     @Override
@@ -160,10 +169,17 @@ public class MemberServiceImpl implements MemberService {
         if (!member.getEmail().equals(dto.getEmail()) && memberRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessConflictException("Email already exists");
         }
+
+        int maxHours = getMaxHoursForPlan(dto.getPlanType());
+        if (dto.getMonthlyHoursQuota() > maxHours) {
+            throw new BusinessConflictException("El cupo mensual supera el límite para el plan " + dto.getPlanType() + ". Máximo: " + maxHours + "h.");
+        }
+
         member.setFullName(dto.getFullName());
         member.setEmail(dto.getEmail());
         member.setPhone(dto.getPhone());
         member.setPlanType(dto.getPlanType());
+        member.setMonthlyHoursQuota(dto.getMonthlyHoursQuota());
         return toResponse(memberRepository.save(member));
     }
     @Override
@@ -253,6 +269,7 @@ public class MemberServiceImpl implements MemberService {
 
 
         res.setUsedHoursThisMonth(used);
+        res.setQuotaWarning(used >= m.getMonthlyHoursQuota() * 0.8);
 
         return res;
 
@@ -277,4 +294,3 @@ public class MemberServiceImpl implements MemberService {
     }
 
 }
-

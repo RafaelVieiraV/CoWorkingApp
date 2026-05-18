@@ -9,6 +9,7 @@ import ec.edu.espe.coworkingapp.dto.request.WorkspaceRequestDto;
 import ec.edu.espe.coworkingapp.dto.response.WorkspaceResponseDto;
 
 import ec.edu.espe.coworkingapp.service.WorkspaceService;
+import ec.edu.espe.coworkingapp.service.BookingService;
 
 import jakarta.validation.Valid;
 
@@ -39,12 +40,14 @@ public class WorkspaceController {
 
 
     private final WorkspaceService workspaceService;
+    private final ec.edu.espe.coworkingapp.service.BookingService bookingService;
 
 
 
-    public WorkspaceController(WorkspaceService workspaceService) {
+    public WorkspaceController(WorkspaceService workspaceService, ec.edu.espe.coworkingapp.service.BookingService bookingService) {
 
         this.workspaceService = workspaceService;
+        this.bookingService = bookingService;
 
     }
 
@@ -73,8 +76,9 @@ public class WorkspaceController {
     @GetMapping("/search")
     public ResponseEntity<Page<WorkspaceResponseDto>> search(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean available,
             @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(workspaceService.searchPage(name, pageable));
+        return ResponseEntity.ok(workspaceService.searchPage(name, available, pageable));
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
@@ -131,5 +135,16 @@ public class WorkspaceController {
 
     }
 
-}
+    @PatchMapping("/{id}/activate")
+    public ResponseEntity<Void> activate(@PathVariable Long id) {
+        workspaceService.activate(id);
+        return ResponseEntity.noContent().build();
+    }
 
+    @GetMapping("/{id}/bookings")
+
+    public ResponseEntity<List<ec.edu.espe.coworkingapp.dto.response.BookingResponseDto>> findWorkspaceBookings(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.findByWorkspace(id));
+    }
+
+}

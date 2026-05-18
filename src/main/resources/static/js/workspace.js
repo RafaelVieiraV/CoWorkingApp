@@ -68,6 +68,11 @@ function renderTable(workspaces) {
                 '<button class="btn-action cancel" title="Deshabilitar" onclick="disableWorkspace(' + w.id + ')">' +
                 '<i class="bi bi-slash-circle"></i>' +
                 '</button>';
+        } else {
+            actions +=
+                '<button class="btn-action confirm" title="Activar" onclick="activateWorkspace(' + w.id + ')">' +
+                '<i class="bi bi-check-circle"></i>' +
+                '</button>';
         }
 
         actions +=
@@ -111,10 +116,13 @@ async function loadWorkspaces(page) {
         var url = '/api/workspaces/search?page=' + currentPage + '&size=10';
         var isPlainList = false;
 
-        if (availableFilter === 'available') {
-            url = '/api/workspaces/available';
-            isPlainList = true;
-        } else if (typeFilter) {
+        if (availableFilter) {
+            url += '&available=' + encodeURIComponent(availableFilter);
+        }
+
+        if (typeFilter) {
+            // Note: If type filter is used, it overrides search currently because backend doesn't support combined type+page
+            // For now, let's fallback to the custom list if type is selected
             url = '/api/workspaces/type/' + typeFilter;
             isPlainList = true;
         } else if (name) {
@@ -245,6 +253,24 @@ async function disableWorkspace(id) {
         } else {
             var data = await res.json();
             showAlert(data.message || 'No se pudo deshabilitar el espacio', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
+}
+
+async function activateWorkspace(id) {
+    try {
+        var res = await fetch('/api/workspaces/' + id + '/activate', {
+            method: 'PATCH',
+            headers: headers()
+        });
+        if (res.ok || res.status === 204) {
+            showAlert('Espacio activado', 'success');
+            loadWorkspaces(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo activar el espacio', 'error');
         }
     } catch (e) {
         showAlert('Error de conexión', 'error');

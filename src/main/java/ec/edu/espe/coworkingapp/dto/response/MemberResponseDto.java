@@ -12,9 +12,9 @@ public class MemberResponseDto {
     private PlanType planType;
     private Integer monthlyHoursQuota;
     private Boolean active;
+    private double usedHoursThisMonth;
+    private boolean quotaWarning;
     private LocalDateTime createdAt;
-    // Optional extra logic mentioned in the spec, we will add manually where needed or include here.
-    private Double usedHoursThisMonth;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -30,8 +30,10 @@ public class MemberResponseDto {
     public void setMonthlyHoursQuota(Integer monthlyHoursQuota) { this.monthlyHoursQuota = monthlyHoursQuota; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public double getUsedHoursThisMonth() { return usedHoursThisMonth; }
+    public void setUsedHoursThisMonth(double usedHoursThisMonth) { this.usedHoursThisMonth = usedHoursThisMonth; }
+    public boolean isQuotaWarning() { return quotaWarning; }
+    public void setQuotaWarning(boolean quotaWarning) { this.quotaWarning = quotaWarning; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public Double getUsedHoursThisMonth() { return usedHoursThisMonth; }
-    public void setUsedHoursThisMonth(Double usedHoursThisMonth) { this.usedHoursThisMonth = usedHoursThisMonth; }
 }

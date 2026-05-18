@@ -74,6 +74,11 @@ function renderTable(members) {
             '<i class="bi bi-trash"></i>' +
             '</button>';
 
+        var usedHoursDisplay = (m.usedHoursThisMonth != null ? m.usedHoursThisMonth : '-');
+        if (m.quotaWarning) {
+            usedHoursDisplay += ' <i class="bi bi-exclamation-triangle-fill text-warning" style="color: orange;" title="¡Atención! Cupo próximo a agotarse"></i>';
+        }
+
         return '<tr>' +
             '<td>' + m.id + '</td>' +
             '<td>' + (m.fullName || '-') + '</td>' +
@@ -81,7 +86,7 @@ function renderTable(members) {
             '<td>' + (m.phone || '-') + '</td>' +
             '<td>' + planLabel(m.planType) + '</td>' +
             '<td>' + (m.monthlyHoursQuota || '-') + '</td>' +
-            '<td>' + (m.usedHoursThisMonth != null ? m.usedHoursThisMonth : '-') + '</td>' +
+            '<td>' + usedHoursDisplay + '</td>' +
             '<td>' + activeBadge(m.active) + '</td>' +
             '<td><div class="actions-cell">' + actions + '</div></td>' +
             '</tr>';
@@ -107,23 +112,26 @@ async function loadMembers(page) {
     var activeFilter = document.getElementById('filterActive') ? document.getElementById('filterActive').value : '';
     try {
         var url = '/api/members/search?page=' + currentPage + '&size=10';
-        if (activeFilter === 'active') {
-             url = '/api/members/active'; // Notice: active is not paginated natively in controller currently but it was treated previously
-        } else if (name) {
+        if (activeFilter) {
+             url += '&active=' + encodeURIComponent(activeFilter);
+        }
+        if (name) {
              url += '&name=' + encodeURIComponent(name);
         }
         var res = await fetch(url, { headers: headers() });
         if (!res.ok) throw new Error();
         var data = await res.json();
-        if (activeFilter === 'active') {
-             totalPages = 1;
-             renderTable(data);
-             document.getElementById('pagination').innerHTML = '';
-        } else {
-             totalPages = data.totalPages;
-             renderTable(data.content);
-             renderPagination();
+        totalPages = data.totalPages;
+        renderTable(data.content);
+        renderPagination();
+
+        // Show general warning if any member on the page has quota warning
+        var hasWarning = data.content.some(function(m) { return m.quotaWarning; });
+        var alertEl = document.getElementById('pageAlert');
+        if (hasWarning && alertEl.style.display === 'none') {
+            showAlert('Hay miembros cuyo cupo mensual de horas está por agotarse o ya se agotó.', 'warning');
         }
+
     } catch (e) {
         document.getElementById('membersBody').innerHTML = '<tr><td colspan="9" class="empty-state">Error al cargar miembros</td></tr>';
     }

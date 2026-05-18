@@ -219,10 +219,19 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
 
     @Override
-    public Page<WorkspaceResponseDto> searchPage(String name, Pageable pageable) {
-        Page<Workspace> workspaces = (name != null && !name.trim().isEmpty()) 
-            ? workspaceRepository.findByNameContainingIgnoreCase(name, pageable)
-            : workspaceRepository.findAll(pageable);
+    public Page<WorkspaceResponseDto> searchPage(String name, Boolean available, Pageable pageable) {
+        Page<Workspace> workspaces;
+        boolean hasName = name != null && !name.trim().isEmpty();
+
+        if (hasName && available != null) {
+            workspaces = workspaceRepository.findByNameContainingIgnoreCaseAndAvailable(name, available, pageable);
+        } else if (hasName) {
+            workspaces = workspaceRepository.findByNameContainingIgnoreCase(name, pageable);
+        } else if (available != null) {
+            workspaces = workspaceRepository.findByAvailable(available, pageable);
+        } else {
+            workspaces = workspaceRepository.findAll(pageable);
+        }
         return workspaces.map(this::toResponse);
     }
     @Override
@@ -258,7 +267,18 @@ public class WorkspaceServiceImpl implements WorkspaceService {
 
     }
 
+    @Override
+    public void activate(Long id) {
+        Workspace w = workspaceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace no encontrado con id: " + id));
 
+        if (Boolean.TRUE.equals(w.getAvailable())) {
+            throw new BusinessConflictException("El workspace ya se encuentra disponible");
+        }
+
+        w.setAvailable(true);
+        workspaceRepository.save(w);
+    }
 
     private void validateCapacityForType(WorkspaceType type, int capacity) {
 
@@ -307,4 +327,3 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     }
 
 }
-

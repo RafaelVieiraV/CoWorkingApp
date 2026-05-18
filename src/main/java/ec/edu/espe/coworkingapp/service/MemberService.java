@@ -11,7 +11,7 @@ public interface MemberService {
     MemberResponseDto create(MemberRequestDto dto);
     MemberResponseDto findById(Long id);
     List<MemberResponseDto> findAll();
-    Page<MemberResponseDto> searchPage(String name, Pageable pageable);
+    Page<MemberResponseDto> searchPage(String name, Boolean active, Pageable pageable);
     MemberResponseDto update(Long id, MemberRequestDto dto);
     void delete(Long id);
     List<MemberResponseDto> findAllActive();

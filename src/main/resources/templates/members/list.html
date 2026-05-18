@@ -28,7 +28,8 @@
             <input type="text" id="searchName" class="filter-input" placeholder="Buscar por nombre..."/>
             <select id="filterActive" class="filter-input" onchange="applyFilters()">
                 <option value="">Todos</option>
-                <option value="active">Activos</option>
+                <option value="true">Activos</option>
+                <option value="false">Inactivos</option>
             </select>
             <button class="btn-secondary" onclick="applyFilters()">
                 <i class="bi bi-search"></i> Buscar
@@ -77,8 +78,8 @@
                     <input type="email" id="formEmail" class="form-input" placeholder="correo@ejemplo.com"/>
                 </div>
                 <div class="form-group">
-                    <label>Teléfono</label>
-                    <input type="text" id="formPhone" class="form-input" placeholder="Opcional"/>
+                    <label>Teléfono (celular)</label>
+                    <input type="text" id="formPhone" class="form-input" placeholder="09........"/>
                 </div>
                 <div class="form-group">
                     <label>Tipo de plan</label>

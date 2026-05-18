@@ -79,8 +79,9 @@ public class MemberController {
     @GetMapping("/search")
     public ResponseEntity<Page<MemberResponseDto>> search(
             @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean active,
             @PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(memberService.searchPage(name, pageable));
+        return ResponseEntity.ok(memberService.searchPage(name, active, pageable));
     }
     @PutMapping("/{id}")
     public ResponseEntity<MemberResponseDto> update(@PathVariable Long id, @Valid @RequestBody MemberRequestDto dto) {

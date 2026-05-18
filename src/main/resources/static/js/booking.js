@@ -304,7 +304,7 @@ async function confirmDelete() {
 
 async function loadMemberOptions() {
     try {
-        var res = await fetch('/api/members/active', { headers: headers() });
+        var res = await fetch('/api/members', { headers: headers() });
         if (!res.ok) return;
         var members = await res.json();
         var select = document.getElementById('formMemberId');
@@ -320,7 +320,7 @@ async function loadMemberOptions() {
 
 async function loadWorkspaceOptions() {
     try {
-        var res = await fetch('/api/workspaces/available', { headers: headers() });
+        var res = await fetch('/api/workspaces', { headers: headers() });
         if (!res.ok) return;
         var workspaces = await res.json();
         var select = document.getElementById('formWorkspaceId');

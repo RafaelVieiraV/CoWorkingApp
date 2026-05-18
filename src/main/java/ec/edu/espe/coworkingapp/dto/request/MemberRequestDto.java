@@ -7,15 +7,15 @@ public class MemberRequestDto {
 
     @NotBlank(message = "El nombre es obligatorio")
     @Size(min = 3, max = 120, message = "El nombre debe tener entre 3 y 120 caracteres")
-    @Pattern(regexp = "^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$", message = "El nombre solo puede contener letras y espacios")
+    @Pattern(regexp = "^[A-Za-záéíóúÁÉÍÓÚñÑ]+\\s+[A-Za-záéíóúÁÉÍÓÚñÑ\\s]+$", message = "El nombre debe contener al menos un nombre y un apellido")
     private String fullName;
 
     @NotBlank(message = "El email es obligatorio")
-    @Email(message = "Formato de email inválido")
+    @Email(message = "Formato de email invlido")
     @Size(max = 150)
     private String email;
 
-    @Pattern(regexp = "^[0-9]+$", message = "El teléfono solo puede contener números enteros")
+    @Pattern(regexp = "^09\\d{8}$", message = "El teléfono (celular) debe empezar con 09 y tener exactamente 10 dígitos")
     private String phone;
 
     @NotNull(message = "El tipo de plan es obligatorio")
