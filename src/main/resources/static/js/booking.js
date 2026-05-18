@@ -320,7 +320,7 @@ async function loadMemberOptions() {
 
 async function loadWorkspaceOptions() {
     try {
-        var res = await fetch('/api/workspaces', { headers: headers() });
+        var res = await fetch('/api/workspaces/available', { headers: headers() });
         if (!res.ok) return;
         var workspaces = await res.json();
         var select = document.getElementById('formWorkspaceId');
@@ -348,5 +348,3 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     loadBookings(0);
 });
-
-

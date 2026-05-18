@@ -18,6 +18,7 @@ public class WorkspaceRequestDto {
 
     @NotNull(message = "El precio es obligatorio")
     @DecimalMin(value = "0.0", inclusive = true, message = "El precio no puede ser negativo")
+    @DecimalMax(value = "1000.0", inclusive = true, message = "El precio por hora no puede exceder los $1000")
     private Double pricePerHour;
 
     @NotNull(message = "El piso es obligatorio")

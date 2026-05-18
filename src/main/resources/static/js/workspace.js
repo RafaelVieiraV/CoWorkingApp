@@ -217,6 +217,11 @@ async function saveWorkspace() {
         return;
     }
 
+    if (body.pricePerHour > 1000) {
+        showError('El precio por hora no puede exceder los $1000');
+        return;
+    }
+
     try {
         var url = id ? '/api/workspaces/' + id : '/api/workspaces';
         var method = id ? 'PUT' : 'POST';
