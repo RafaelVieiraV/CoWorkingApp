@@ -304,7 +304,7 @@ async function confirmDelete() {
 
 async function loadMemberOptions() {
     try {
-        var res = await fetch('/api/members', { headers: headers() });
+        var res = await fetch('/api/members/active', { headers: headers() });
         if (!res.ok) return;
         var members = await res.json();
         var select = document.getElementById('formMemberId');
