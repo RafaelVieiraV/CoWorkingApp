@@ -41,8 +41,8 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
     Page<Workspace> findByAvailable(Boolean available, Pageable pageable);
 
     @Query("SELECT w FROM Workspace w " +
-           "WHERE (:name IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-           "AND (:available IS NULL OR w.available = :available) " +
+           "WHERE (:name IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', CAST(:name as string), '%'))) " +
+           "AND (:available IS NULL OR w.available = CAST(:available as boolean)) " +
            "AND (:type IS NULL OR w.type = :type)")
     Page<Workspace> searchWorkspaces(
             @Param("name") String name,
