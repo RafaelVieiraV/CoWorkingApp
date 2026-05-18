@@ -42,7 +42,7 @@ public interface WorkspaceRepository extends JpaRepository<Workspace, Long> {
 
     @Query("SELECT w FROM Workspace w " +
            "WHERE (:name IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', CAST(:name as string), '%'))) " +
-           "AND (:available IS NULL OR w.available = CAST(:available as boolean)) " +
+           "AND (:available IS NULL OR w.available = :available) " +
            "AND (:type IS NULL OR w.type = :type)")
     Page<Workspace> searchWorkspaces(
             @Param("name") String name,
