@@ -21,6 +21,8 @@ public class WorkspaceRequestDto {
     private Double pricePerHour;
 
     @NotNull(message = "El piso es obligatorio")
+    @Min(value = 1, message = "El piso mínimo es 1")
+    @Max(value = 10, message = "El piso máximo es 10")
     private Integer floor;
 
     private String description;
