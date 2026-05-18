@@ -26,7 +26,7 @@ public class BookingControllerTest {
     @Autowired
     private MockMvc mockMvc;
     @MockBean
-    //private BookingService bookingService;
+    private BookingService bookingService;
     @MockBean
     private JwtUtil jwtUtil;
     private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
