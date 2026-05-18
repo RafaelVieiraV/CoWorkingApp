@@ -45,7 +45,7 @@ public class WorkspaceControllerTest {
     }
     @Test
     void searchWorkspaces() throws Exception {
-        when(workspaceService.searchPage(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(workspaceService.searchPage(any(), any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         mockMvc.perform(get("/api/workspaces/search?name=Sala&size=5"))
                .andExpect(status().isOk());
     }

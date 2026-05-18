@@ -48,7 +48,7 @@ public class MemberControllerTest {
     }
     @Test
     void searchMembers() throws Exception {
-        when(memberService.searchPage(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(memberService.searchPage(any(), any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         mockMvc.perform(get("/api/members/search?name=John&size=5"))
                .andExpect(status().isOk());
     }
