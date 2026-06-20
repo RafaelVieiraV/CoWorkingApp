@@ -2,9 +2,9 @@ spring:
   application:
     name: coworking-app
   datasource:
-    url: jdbc:postgresql://dpg-d82ejefavr4c73dq1aag-a.oregon-postgres.render.com/coworking_db_doaz
-    username: coworking_db_doaz_user
-    password: V0cZsYd8fYrX8FqL8XMKP4pMVXkEpuCQ
+    url: jdbc:postgresql://dpg-d8qrirp194ac7399qr70-a.oregon-postgres.render.com/coworking_db_2
+    username: coworking_db_2_user
+    password: xv7tLHQHoj5WE71h1OoscJCn0pxacOCf
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -15,7 +15,7 @@ spring:
         format_sql: true
 
 server:
-  port: 8080
+  port: 8081
 
 jwt:
   secret: "clave-super-secreta-de-256-bits-para-coworking-app-espe"
