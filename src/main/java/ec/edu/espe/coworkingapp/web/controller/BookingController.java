@@ -8,6 +8,8 @@ import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
 
 import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 
+import ec.edu.espe.coworkingapp.pubsub.BookingPipelineResult;
+import ec.edu.espe.coworkingapp.pubsub.BookingPipelineService;
 import ec.edu.espe.coworkingapp.service.BookingService;
 
 import jakarta.validation.Valid;
@@ -39,26 +41,25 @@ public class BookingController {
 
 
     private final BookingService bookingService;
+    private final BookingPipelineService bookingPipelineService;
 
 
 
-    public BookingController(BookingService bookingService) {
-
+    public BookingController(BookingService bookingService, BookingPipelineService bookingPipelineService) {
         this.bookingService = bookingService;
-
+        this.bookingPipelineService = bookingPipelineService;
     }
 
 
 
     @PostMapping
 
-    public ResponseEntity<BookingResponseDto> create(@Valid @RequestBody BookingRequestDto dto) {
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.create(dto));
-
+    public ResponseEntity<BookingCreationResponse> create(@Valid @RequestBody BookingRequestDto dto) {
+        BookingResponseDto bookingCreado = bookingService.create(dto);
+        BookingPipelineResult verificacion = bookingPipelineService.verificarReservasReales();
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new BookingCreationResponse(bookingCreado, verificacion));
     }
-
-
 
     @GetMapping("/search")
     public ResponseEntity<Page<BookingResponseDto>> search(
@@ -66,16 +67,17 @@ public class BookingController {
             @PageableDefault(size = 10) Pageable pageable) {
         return ResponseEntity.ok(bookingService.searchPage(id, pageable));
     }
+
     @PutMapping("/{id}")
     public ResponseEntity<BookingResponseDto> update(@PathVariable Long id, @Valid @RequestBody BookingRequestDto dto) {
         return ResponseEntity.ok(bookingService.update(id, dto));
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         bookingService.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 
     @GetMapping
     public ResponseEntity<List<BookingResponseDto>> findAll() {
@@ -83,8 +85,6 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.findAll());
 
     }
-
-
 
     @GetMapping("/{id}")
 
@@ -94,8 +94,6 @@ public class BookingController {
 
     }
 
-
-
     @GetMapping("/member/{memberId}")
 
     public ResponseEntity<List<BookingResponseDto>> findByMember(@PathVariable Long memberId) {
@@ -104,8 +102,6 @@ public class BookingController {
 
     }
 
-
-
     @GetMapping("/workspace/{workspaceId}")
 
     public ResponseEntity<List<BookingResponseDto>> findByWorkspace(@PathVariable Long workspaceId) {
@@ -113,8 +109,6 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.findByWorkspace(workspaceId));
 
     }
-
-
 
     @GetMapping("/status/{status}")
 
@@ -134,8 +128,6 @@ public class BookingController {
 
     }
 
-
-
     @PatchMapping("/{id}/confirm")
 
     public ResponseEntity<BookingResponseDto> confirm(@PathVariable Long id) {
@@ -144,8 +136,6 @@ public class BookingController {
 
     }
 
-
-
     @PatchMapping("/{id}/cancel")
 
     public ResponseEntity<BookingResponseDto> cancel(@PathVariable Long id) {
@@ -153,6 +143,12 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.cancel(id));
 
     }
+     
+    //Respuesta: la reserva recién creada + el resultado de la verificación reactiva sobre todas las reservas
+    public record BookingCreationResponse(
+            BookingResponseDto booking,
+            BookingPipelineResult verificacionReactiva
+    ) {
+    }
 
 }
-
