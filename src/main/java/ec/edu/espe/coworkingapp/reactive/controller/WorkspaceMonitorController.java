@@ -20,6 +20,12 @@ public class WorkspaceMonitorController {
         this.service = service;
     }
 
+    // Recalcula la ocupación REAL de todas las salas y la emite al stream
+    @PostMapping("/refresh")
+    public Flux<WorkspaceReading> refreshOccupancy() {
+        return service.refreshRealOccupancy();
+    }
+
     // Registrar una nueva lectura de ocupación
     @PostMapping("/readings")
     public Mono<ResponseEntity<WorkspaceReading>> createReading(@RequestBody WorkspaceReading reading) {

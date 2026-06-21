@@ -59,6 +59,9 @@
                     <button class="btn-primary" onclick="sendReading()">
                         <i class="bi bi-send"></i> Enviar lectura
                     </button>
+                    <button class="btn-secondary" onclick="refreshReal()" style="margin-top:.5rem;">
+                        <i class="bi bi-arrow-repeat"></i> Calcular ocupación real
+                    </button>
                 </div>
 
                 <div class="monitor-card">
@@ -152,6 +155,17 @@
             out.textContent = 'Error';
         } finally {
             btn.disabled = false;
+        }
+    }
+
+    // ---- POST recalcular ocupación REAL desde las reservas ----
+    async function refreshReal() {
+        try {
+            const res = await fetch('/api/monitor/refresh', { method: 'POST' });
+            if (!res.ok) throw new Error('Error ' + res.status);
+            showAlert('Ocupación real recalculada.', false);
+        } catch (err) {
+            showAlert('Error al recalcular: ' + err.message, true);
         }
     }
 
