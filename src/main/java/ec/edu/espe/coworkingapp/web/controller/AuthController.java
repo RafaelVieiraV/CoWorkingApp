@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
 
@@ -24,14 +25,15 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> login(
             @Valid @RequestBody AdminRequestDto request,
-            HttpServletResponse response) { // <--- Inyectamos la respuesta HTTP
+            HttpServletRequest httpRequest,
+            HttpServletResponse response) {
 
         String token = authService.login(request.getEmail(), request.getPassword());
 
         // 1. CREAR LA COOKIE CON EL NOMBRE "jwt" (tal como lo busca tu filtro)
         Cookie jwtCookie = new Cookie("jwt", token);
         jwtCookie.setHttpOnly(true);   // Bloquea accesos de scripts maliciosos (XSS)
-        jwtCookie.setSecure(true);     // Requerido en producción/Render (HTTPS)
+        jwtCookie.setSecure(httpRequest.isSecure());     // Requerido en producción/Render (HTTPS)
         jwtCookie.setPath("/");        // Hace que la cookie sea válida para todo el dominio
         jwtCookie.setMaxAge(86400);    // Tiempo de vida: 1 día en segundos
 

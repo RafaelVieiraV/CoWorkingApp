@@ -35,4 +35,10 @@ public class ViewController {
         model.addAttribute("activePage", "bookings");
         return "booking/list";
     }
+
+    @GetMapping("/monitor")
+    public String monitor(Model model) {
+        model.addAttribute("activePage", "monitor");
+        return "monitor/live";
+    }
 }

@@ -20,6 +20,11 @@
            th:classappend="${activePage == 'bookings'} ? 'active'">
             <i class="bi bi-calendar-check"></i>
         </a>
+
+        <a th:href="@{/monitor}" class="sidebar-link"
+           th:classappend="${activePage == 'monitor'} ? 'active'">
+            <i class="bi bi-activity"></i>
+        </a>
     </nav>
 </aside>
 
