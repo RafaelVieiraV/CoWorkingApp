@@ -51,8 +51,10 @@ public class PaymentController {
         return paymentService.stream();
     }
 
-
-     //SSE: emite los eventos del pipeline de verificación de reservas en tiempo real
+    /**
+     * SSE: emite los eventos del pipeline de verificación de reservas en
+     * tiempo real uno a uno, tal como ocurren.
+     */
     @GetMapping(value = "/pipeline-stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> pipelineStream() {
         return pipelineStreamService.ejecutarYEmitirEventos();
