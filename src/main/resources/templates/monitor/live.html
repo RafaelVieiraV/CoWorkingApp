@@ -5,29 +5,37 @@
     <link th:href="@{/css/app.css}" rel="stylesheet"/>
     <title>Transacciones en Vivo - CoWorking App</title>
     <style>
-        .monitor-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5rem; align-items: start; }
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.5rem; align-items: start; }
         .monitor-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; }
         .monitor-card h3 { margin:0 0 .35rem; font-size:1rem; font-weight:600; }
         .monitor-card .hint { color:#9ca3af; font-size:.78rem; margin:0 0 1rem; }
         .banner { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:10px;
             padding:.75rem 1rem; font-size:.85rem; margin-bottom:1.5rem; display:flex; gap:.5rem; align-items:flex-start; }
-        .field input { width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:8px; }
         .status { display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; padding:.25rem .6rem; border-radius:999px; }
         .status.on  { background:#dcfce7; color:#166534; }
         .status.off { background:#fee2e2; color:#991b1b; }
         .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .tx-list { max-height:460px; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
-        .tx-item { border:1px solid #e5e7eb; border-left:3px solid #16a34a; background:#f9fafb; border-radius:8px; padding:.7rem .85rem; animation:slideIn .3s ease; }
+        .tx-list { max-height:480px; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
+        .tx-item { border:1px solid #e5e7eb; background:#f9fafb; border-radius:8px; padding:.7rem .85rem; animation:slideIn .3s ease; }
+        .tx-item.pagado { border-left:3px solid #16a34a; }
+        .tx-item.pendiente { border-left:3px solid #d97706; }
         @keyframes slideIn { from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none} }
         .tx-top { display:flex; justify-content:space-between; align-items:center; }
-        .tx-amount { font-weight:700; color:#16a34a; font-size:1.05rem; }
-        .tx-sub { color:#6b7280; font-size:.8rem; margin:.15rem 0 .5rem; }
+        .tx-amount { font-weight:700; color:#111827; font-size:1.05rem; }
+        .tx-sub { color:#6b7280; font-size:.8rem; margin:.15rem 0 .55rem; }
+        .pill { font-size:.68rem; padding:.12rem .55rem; border-radius:999px; font-weight:700; }
+        .pill.PAGADO { background:#dcfce7; color:#166534; }
+        .pill.PENDIENTE { background:#fef9c3; color:#854d0e; }
+        .actions { display:flex; gap:.5rem; }
+        .btn-pay { background:#dcfce7; color:#166534; border:none; border-radius:8px; padding:.35rem .7rem; font-size:.8rem; font-weight:600; cursor:pointer; }
+        .btn-pay:hover { background:#bbf7d0; }
+        .btn-pay:disabled { opacity:.5; cursor:default; }
         .btn-cancel { background:#fee2e2; color:#991b1b; border:none; border-radius:8px; padding:.35rem .7rem; font-size:.8rem; font-weight:600; cursor:pointer; }
         .btn-cancel:hover { background:#fecaca; }
         .big-value { font-size:1.8rem; font-weight:700; color:#4f46e5; margin:.25rem 0 .75rem; }
         .small { font-size:.78rem; color:#6b7280; }
-        .summary { display:flex; gap:1.25rem; margin-bottom:.75rem; }
+        .summary { display:flex; gap:1.5rem; margin-bottom:.85rem; }
         .summary div b { display:block; font-size:1.3rem; color:#111827; }
         .console { background:#0f172a; color:#cbd5e1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem;
             border-radius:8px; padding:.75rem; max-height:170px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
@@ -44,15 +52,15 @@
         <div class="page-header">
             <div>
                 <h1 class="page-title">Transacciones en Vivo</h1>
-                <p class="page-subtitle">Pagos de las reservas activas en tiempo real (WebFlux · SSE)</p>
+                <p class="page-subtitle">Pagos de las reservas confirmadas en tiempo real (WebFlux · SSE)</p>
             </div>
             <span id="connStatus" class="status off"><span class="dot"></span> Desconectado</span>
         </div>
 
         <div class="banner">
             <i class="bi bi-info-circle"></i>
-            <span>Cada vez que <strong>confirmas</strong> una reserva se genera su pago y aparece aquí.
-            Si <strong>cancelas el pago</strong>, la reserva se cancela y desaparece de la lista, todo en vivo.</span>
+            <span>Aquí están tus <strong>reservas confirmadas</strong>. Marca el pago como pagado o cancela la reserva;
+            el cambio se ve al instante y en todas las pestañas abiertas (SSE).</span>
         </div>
 
         <div id="pageAlert" class="page-alert" style="display:none;"></div>
@@ -62,7 +70,7 @@
             <!-- ===== Columna izquierda ===== -->
             <div>
                 <div class="monitor-card">
-                    <h3>Promedio de pagos activos</h3>
+                    <h3>Promedio de pagos</h3>
                     <p class="hint">GET /api/payments/average — asíncrono (~3s) con delayElement, no bloqueante.</p>
                     <div class="big-value" id="avgValue">—</div>
                     <button class="btn-secondary" onclick="loadAverage()" id="avgBtn">
@@ -86,10 +94,11 @@
                 <p class="hint">Se cargan al entrar (GET /active) y se actualizan solas por el stream (SSE).</p>
                 <div class="summary">
                     <div class="small">Activas <b id="countActive">0</b></div>
+                    <div class="small">Pagadas <b id="countPaid">0</b></div>
                     <div class="small">Total $ <b id="sumActive">0.00</b></div>
                 </div>
                 <div class="tx-list" id="txList">
-                    <span class="small" id="txEmpty">No hay reservas activas. Confirma una reserva para verla aquí.</span>
+                    <span class="small" id="txEmpty">Cargando…</span>
                 </div>
             </div>
 
@@ -101,65 +110,85 @@
 <script>
     const statusEl = document.getElementById('connStatus');
     const txList = document.getElementById('txList');
-    const txMap = new Map(); // id -> transacción (estado actual)
+    const map = new Map(); // bookingId -> PaymentView
 
     function fmt(dt) { return dt ? new Date(dt).toLocaleString() : '—'; }
 
-    function renderActive() {
-        const activas = [...txMap.values()].filter(t => t.status === 'ACTIVA')
-            .sort((a, b) => b.id - a.id);
-        document.getElementById('countActive').textContent = activas.length;
+    function render() {
+        const items = [...map.values()]
+            .filter(t => t.paymentStatus !== 'CANCELADA')
+            .sort((a, b) => b.bookingId - a.bookingId);
+
+        document.getElementById('countActive').textContent = items.length;
+        document.getElementById('countPaid').textContent = items.filter(t => t.paymentStatus === 'PAGADO').length;
         document.getElementById('sumActive').textContent =
-            activas.reduce((s, t) => s + (t.amount || 0), 0).toFixed(2);
+            items.reduce((s, t) => s + (t.amount || 0), 0).toFixed(2);
 
         txList.innerHTML = '';
-        if (!activas.length) {
-            txList.innerHTML = '<span class="small">No hay reservas activas. Confirma una reserva para verla aquí.</span>';
+        if (!items.length) {
+            txList.innerHTML = '<span class="small">No hay reservas activas. Confirma una reserva en la sección Reservas.</span>';
             return;
         }
-        activas.forEach(t => {
+        items.forEach(t => {
+            const pagado = t.paymentStatus === 'PAGADO';
             const div = document.createElement('div');
-            div.className = 'tx-item';
+            div.className = 'tx-item ' + (pagado ? 'pagado' : 'pendiente');
             div.innerHTML = `
                 <div class="tx-top">
-                    <strong>${t.workspaceName ?? 'Pago'} </strong>
-                    <span class="tx-amount">$${(t.amount ?? 0).toFixed(2)}</span>
+                    <strong>${t.workspaceName ?? '—'}</strong>
+                    <span class="tx-amount">$${(t.amount ?? 0).toFixed(2)}
+                        <span class="pill ${t.paymentStatus}">${t.paymentStatus}</span></span>
                 </div>
-                <div class="tx-sub">${t.memberName ?? '—'} · pago #${t.id} · ${fmt(t.timestamp)}</div>
-                <button class="btn-cancel" onclick="cancelPayment(${t.id})">
-                    <i class="bi bi-x-circle"></i> Cancelar pago
-                </button>`;
+                <div class="tx-sub">${t.memberName ?? '—'} · reserva #${t.bookingId}</div>
+                <div class="actions">
+                    <button class="btn-pay" onclick="pay(${t.bookingId})" ${pagado ? 'disabled' : ''}>
+                        <i class="bi bi-cash-coin"></i> ${pagado ? 'Pagado' : 'Marcar pagado'}
+                    </button>
+                    <button class="btn-cancel" onclick="cancelBooking(${t.bookingId})">
+                        <i class="bi bi-x-circle"></i> Cancelar reserva
+                    </button>
+                </div>`;
             txList.appendChild(div);
         });
     }
 
-    // Cargar reservas activas al entrar
+    // Cargar reservas activas reales al entrar
     async function loadActive() {
         try {
             const data = await fetch('/api/payments/active').then(r => r.json());
-            data.forEach(t => txMap.set(t.id, t));
+            data.forEach(t => map.set(t.bookingId, t));
         } catch (e) {}
-        renderActive();
+        render();
     }
 
-    // Stream en vivo (SSE): cada cambio (nuevo pago o cancelación) actualiza el mapa
+    // Stream en vivo (SSE)
     function connectStream() {
         const source = new EventSource('/api/payments/stream');
         source.onopen = () => { statusEl.className = 'status on'; statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
         source.onmessage = (e) => {
-            const tx = JSON.parse(e.data);
-            txMap.set(tx.id, tx);
-            renderActive();
+            const t = JSON.parse(e.data);
+            if (t.paymentStatus === 'CANCELADA') map.delete(t.bookingId);
+            else map.set(t.bookingId, t);
+            render();
         };
         source.onerror = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
     }
 
-    // Cancelar el pago (cancela la reserva); el cambio vuelve por el stream
-    async function cancelPayment(id) {
+    // Marcar pagado
+    async function pay(bookingId) {
         try {
-            const res = await fetch(`/api/payments/${id}/cancel`, { method: 'POST' });
+            const res = await fetch(`/api/payments/${bookingId}/pay`, { method: 'POST' });
             if (!res.ok) throw new Error('Error ' + res.status);
-            showAlert('Pago cancelado.', false);
+            showAlert('Pago registrado.', false);
+        } catch (err) { showAlert('No se pudo pagar: ' + err.message, true); }
+    }
+
+    // Cancelar reserva
+    async function cancelBooking(bookingId) {
+        try {
+            const res = await fetch(`/api/payments/${bookingId}/cancel`, { method: 'POST' });
+            if (!res.ok) throw new Error('Error ' + res.status);
+            showAlert('Reserva cancelada.', false);
         } catch (err) { showAlert('No se pudo cancelar: ' + err.message, true); }
     }
 
@@ -188,7 +217,7 @@
             .then(v => log(`<span class="ok">El promedio TERMINO: $${v.toFixed(2)}</span>`));
         log('Al mismo tiempo pido GET /api/payments ...');
         const lst = await fetch('/api/payments').then(r => r.json());
-        log(`<span class="ok">La lista RESPONDIO AL INSTANTE con ${lst.length} transacciones (no espero al promedio)</span>`);
+        log(`<span class="ok">La lista RESPONDIO AL INSTANTE con ${lst.length} reservas (no espero al promedio)</span>`);
         log('   El servidor no se bloqueo: atendio la lista mientras el promedio seguia en 2do plano.');
         await avgPromise; log('Demostracion finalizada.'); btn.disabled = false;
     }

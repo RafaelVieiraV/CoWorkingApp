@@ -1,62 +1,88 @@
 package ec.edu.espe.coworkingapp.reactive.service;
 
-import ec.edu.espe.coworkingapp.reactive.model.PaymentTransaction;
-import ec.edu.espe.coworkingapp.reactive.repository.PaymentTransactionRepository;
+import ec.edu.espe.coworkingapp.domain.BookingStatus;
+import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
+import ec.edu.espe.coworkingapp.reactive.model.PaymentView;
+import ec.edu.espe.coworkingapp.service.BookingService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class PaymentService {
 
-    private final PaymentTransactionRepository repository;
+    private final BookingService bookingService;
 
-    public PaymentService(PaymentTransactionRepository repository) {
-        this.repository = repository;
+    // Estado de pago por reserva (en memoria): bookingId -> PENDIENTE | PAGADO
+    private final Map<Long, String> paymentStatus = new ConcurrentHashMap<>();
+
+    // Fuente reactiva multicast para emitir cambios al stream
+    private final Sinks.Many<PaymentView> sink = Sinks.many().multicast().onBackpressureBuffer();
+
+    public PaymentService(BookingService bookingService) {
+        this.bookingService = bookingService;
     }
 
-    // Registrar un pago -> Mono creado directo con Mono.just
-    public Mono<PaymentTransaction> register(PaymentTransaction tx) {
-        return Mono.just(repository.save(tx));
+    private PaymentView toView(BookingResponseDto b, String status) {
+        return new PaymentView(b.getId(), b.getWorkspaceName(), b.getMemberFullName(),
+                b.getTotalPrice(), status, LocalDateTime.now());
     }
 
-    // Todas las transacciones (Flux directo)
-    public Flux<PaymentTransaction> getAll() {
-        return repository.findAll();
+    // Reservas activas = reservas CONFIRMADAS reales, con su estado de pago. (Flux creado directo)
+    public Flux<PaymentView> getActive() {
+        return Flux.fromIterable(bookingService.findByStatus(BookingStatus.CONFIRMADA))
+                .map(b -> toView(b, paymentStatus.getOrDefault(b.getId(), "PENDIENTE")));
     }
 
-    // Reservas/pagos activos (Flux directo)
-    public Flux<PaymentTransaction> getActive() {
-        return repository.findActive();
+    // Todas las reservas (lab: listar todas)
+    public Flux<PaymentView> getAll() {
+        return Flux.fromIterable(bookingService.findAll())
+                .map(b -> {
+                    String status = b.getStatus() == BookingStatus.CANCELADA
+                            ? "CANCELADA"
+                            : paymentStatus.getOrDefault(b.getId(), "PENDIENTE");
+                    return toView(b, status);
+                });
     }
 
-    // Stream en vivo (Flux directo)
-    public Flux<PaymentTransaction> getStream() {
-        return repository.getLiveStream();
+    // Registrar el pago de una reserva -> Mono creado directo
+    public Mono<PaymentView> pay(Long bookingId) {
+        BookingResponseDto b = bookingService.findById(bookingId);
+        paymentStatus.put(bookingId, "PAGADO");
+        PaymentView v = toView(b, "PAGADO");
+        sink.tryEmitNext(v);
+        return Mono.just(v);
     }
 
-    public PaymentTransaction findById(Long id) {
-        return repository.findById(id);
+    // Cancelar: cancela la reserva real y emite el cambio
+    public Mono<PaymentView> cancel(Long bookingId) {
+        bookingService.cancel(bookingId);
+        paymentStatus.remove(bookingId);
+        BookingResponseDto b = bookingService.findById(bookingId);
+        PaymentView v = toView(b, "CANCELADA");
+        sink.tryEmitNext(v);
+        return Mono.just(v);
     }
 
-    public void markCancelled(Long id) {
-        PaymentTransaction tx = repository.findById(id);
-        if (tx != null) repository.cancel(tx);
-    }
-
-    /**
-     * Promedio del monto de los pagos ACTIVOS.
-     * El retraso de 3s es 100% reactivo (delayElement): NO usa Thread.sleep, NO bloquea ningún hilo.
-     */
+    // Promedio del monto de las reservas activas. Retraso de 3s NATIVO (delayElement), sin Thread.sleep.
     public Mono<Double> averageAmount() {
-        return repository.findActive()
-                .map(PaymentTransaction::getAmount)
+        return Flux.fromIterable(bookingService.findByStatus(BookingStatus.CONFIRMADA))
+                .map(BookingResponseDto::getTotalPrice)
                 .collectList()
                 .map(list -> list.isEmpty()
                         ? 0.0
                         : list.stream().mapToDouble(Double::doubleValue).average().orElse(0.0))
                 .delayElement(Duration.ofSeconds(3));
+    }
+
+    // Stream en vivo
+    public Flux<PaymentView> stream() {
+        return sink.asFlux();
     }
 }

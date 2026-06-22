@@ -6,7 +6,6 @@ import ec.edu.espe.coworkingapp.domain.Member;
 import ec.edu.espe.coworkingapp.domain.Workspace;
 import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
 import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
-import ec.edu.espe.coworkingapp.reactive.service.PaymentPublisher;
 import ec.edu.espe.coworkingapp.repository.BookingRepository;
 import ec.edu.espe.coworkingapp.repository.MemberRepository;
 import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
@@ -30,16 +29,13 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final MemberRepository memberRepository;
     private final WorkspaceRepository workspaceRepository;
-    private final PaymentPublisher paymentPublisher;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               MemberRepository memberRepository,
-                              WorkspaceRepository workspaceRepository,
-                              PaymentPublisher paymentPublisher) {
+                              WorkspaceRepository workspaceRepository) {
         this.bookingRepository = bookingRepository;
         this.memberRepository = memberRepository;
         this.workspaceRepository = workspaceRepository;
-        this.paymentPublisher = paymentPublisher;
     }
 
     @Override
@@ -194,12 +190,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public void delete(Long id) {
-        Booking b = bookingRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
-
-        // Cancela el pago asociado (si existe) y luego elimina la reserva
-        paymentPublisher.cancelForBooking(id);
-        bookingRepository.delete(b);
+        bookingRepository.deleteById(id);
     }
 
     public BookingResponseDto confirm(Long id) {
@@ -213,11 +204,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessConflictException("El workspace ya no está disponible");
 
         b.setStatus(BookingStatus.CONFIRMADA);
-        BookingResponseDto res = toResponse(bookingRepository.save(b));
-
-        // Al confirmar se genera la transacción de pago (ACTIVA) y se emite al stream
-        paymentPublisher.registerForBooking(b);
-        return res;
+        return toResponse(bookingRepository.save(b));
     }
 
     @Override
@@ -228,11 +215,7 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessConflictException("La reserva ya está cancelada");
 
         b.setStatus(BookingStatus.CANCELADA);
-        BookingResponseDto res = toResponse(bookingRepository.save(b));
-
-        // Al cancelar la reserva se cancela su pago y se emite el cambio al stream
-        paymentPublisher.cancelForBooking(id);
-        return res;
+        return toResponse(bookingRepository.save(b));
     }
 
     private BookingResponseDto toResponse(Booking b) {

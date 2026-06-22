@@ -2,31 +2,27 @@ package ec.edu.espe.coworkingapp.reactive.model;
 
 import java.time.LocalDateTime;
 
-public class PaymentTransaction {
+public class PaymentView {
 
-    private Long id;
-    private Long bookingId;        // reserva asociada (null si es un pago manual de prueba)
+    private Long bookingId;
     private String workspaceName;
     private String memberName;
-    private Double amount;         // monto del pago
-    private String status;         // ACTIVA | CANCELADA
+    private Double amount;
+    private String paymentStatus;   // PENDIENTE | PAGADO | CANCELADA
     private LocalDateTime timestamp;
 
-    public PaymentTransaction() {}
+    public PaymentView() {}
 
-    public PaymentTransaction(Long id, Long bookingId, String workspaceName, String memberName,
-                              Double amount, String status, LocalDateTime timestamp) {
-        this.id = id;
+    public PaymentView(Long bookingId, String workspaceName, String memberName,
+                       Double amount, String paymentStatus, LocalDateTime timestamp) {
         this.bookingId = bookingId;
         this.workspaceName = workspaceName;
         this.memberName = memberName;
         this.amount = amount;
-        this.status = status;
+        this.paymentStatus = paymentStatus;
         this.timestamp = timestamp;
     }
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
     public Long getBookingId() { return bookingId; }
     public void setBookingId(Long bookingId) { this.bookingId = bookingId; }
     public String getWorkspaceName() { return workspaceName; }
@@ -35,8 +31,8 @@ public class PaymentTransaction {
     public void setMemberName(String memberName) { this.memberName = memberName; }
     public Double getAmount() { return amount; }
     public void setAmount(Double amount) { this.amount = amount; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
 }
