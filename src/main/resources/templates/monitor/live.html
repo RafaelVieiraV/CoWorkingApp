@@ -5,24 +5,31 @@
     <link th:href="@{/css/app.css}" rel="stylesheet"/>
     <title>Monitor en Vivo - CoWorking App</title>
     <style>
-        .monitor-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem; align-items: start; }
-        .monitor-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.25rem; }
-        .monitor-card h3 { margin: 0 0 1rem; font-size: 1rem; font-weight: 600; }
-        .field { margin-bottom: .75rem; }
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5rem; align-items: start; }
+        .monitor-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; }
+        .monitor-card h3 { margin:0 0 .35rem; font-size:1rem; font-weight:600; }
+        .monitor-card .hint { color:#9ca3af; font-size:.78rem; margin:0 0 1rem; }
+        .banner { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:10px;
+            padding:.75rem 1rem; font-size:.85rem; margin-bottom:1.5rem; display:flex; gap:.5rem; align-items:flex-start; }
+        .field { margin-bottom:.75rem; }
         .field label { display:block; font-size:.8rem; color:#6b7280; margin-bottom:.25rem; }
         .field input { width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:8px; }
+        .row { display:flex; gap:.5rem; flex-wrap:wrap; }
         .status { display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; padding:.25rem .6rem; border-radius:999px; }
         .status.on  { background:#dcfce7; color:#166534; }
         .status.off { background:#fee2e2; color:#991b1b; }
         .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .feed { max-height: 360px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
+        .feed { max-height:460px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
         .feed-item { border-left:3px solid #6366f1; background:#f9fafb; padding:.5rem .75rem; border-radius:6px; font-size:.85rem; animation:slideIn .3s ease; }
         @keyframes slideIn { from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none} }
         .occ { font-weight:600; }
         .occ.high { color:#dc2626; } .occ.mid { color:#d97706; } .occ.low { color:#16a34a; }
-        .avg-value { font-size:2rem; font-weight:700; color:#4f46e5; }
-        .muted { color:#9ca3af; font-size:.8rem; }
+        .big-value { font-size:1.8rem; font-weight:700; color:#4f46e5; margin:.25rem 0 .75rem; }
+        .small { font-size:.78rem; color:#6b7280; }
+        .console { background:#0f172a; color:#cbd5e1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem;
+            border-radius:8px; padding:.75rem; max-height:180px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
+        .console .ok { color:#4ade80; } .console .wait { color:#fbbf24; }
     </style>
 </head>
 <body>
@@ -35,51 +42,74 @@
         <div class="page-header">
             <div>
                 <h1 class="page-title">Monitor en Vivo</h1>
-                <p class="page-subtitle">Ocupación de espacios en tiempo real (WebFlux + SSE)</p>
+                <p class="page-subtitle">Ocupación real de los espacios en tiempo real (WebFlux · SSE)</p>
             </div>
             <span id="connStatus" class="status off"><span class="dot"></span> Desconectado</span>
+        </div>
+
+        <div class="banner">
+            <i class="bi bi-info-circle"></i>
+            <span>Las lecturas se generan <strong>solas</strong> cuando confirmas o cancelas una reserva en la
+            sección <strong>Reservas</strong>. La ocupación se calcula desde tus reservas confirmadas en curso.</span>
         </div>
 
         <div id="pageAlert" class="page-alert" style="display:none;"></div>
 
         <div class="monitor-grid">
 
-            <!-- Columna izquierda: registrar lectura + promedio -->
-            <div style="display:flex; flex-direction:column; gap:1.5rem;">
+            <!-- ===== Columna izquierda: acciones reales ===== -->
+            <div>
+                <!-- Snapshot del estado actual -->
                 <div class="monitor-card">
-                    <h3>Registrar lectura</h3>
-                    <div class="field">
-                        <label>Workspace</label>
-                        <input type="text" id="workspaceId" placeholder="workspace-1"/>
-                    </div>
-                    <div class="field">
-                        <label>Ocupación (%)</label>
-                        <input type="number" id="occupancy" min="0" max="100" step="0.1" placeholder="75.5"/>
-                    </div>
-                    <button class="btn-primary" onclick="sendReading()">
-                        <i class="bi bi-send"></i> Enviar lectura
+                    <h3>Estado actual</h3>
+                    <p class="hint">Toma una foto de la ocupación real de todas las salas (POST /refresh) y la emite al stream.</p>
+                    <button class="btn-primary" onclick="refreshNow()" id="refreshBtn">
+                        <i class="bi bi-arrow-repeat"></i> Recalcular ocupación ahora
                     </button>
-                    <button class="btn-secondary" onclick="refreshReal()" style="margin-top:.5rem;">
-                        <i class="bi bi-arrow-repeat"></i> Calcular ocupación real
-                    </button>
+                    <span id="refreshMsg" class="small" style="margin-left:.5rem;"></span>
                 </div>
 
+                <!-- Promedio global -->
                 <div class="monitor-card">
-                    <h3>Promedio de ocupación</h3>
-                    <p class="muted">Cálculo asíncrono (~3s) sin bloquear el servidor.</p>
-                    <div class="avg-value" id="avgValue">—</div>
+                    <h3>Promedio global</h3>
+                    <p class="hint">GET /readings/average — asíncrono (~3s), no bloqueante.</p>
+                    <div class="big-value" id="avgValue">—</div>
                     <button class="btn-secondary" onclick="loadAverage()" id="avgBtn">
                         <i class="bi bi-calculator"></i> Calcular promedio
                     </button>
                 </div>
+
+                <!-- Promedio por sala -->
+                <div class="monitor-card">
+                    <h3>Promedio por sala</h3>
+                    <p class="hint">GET /readings/{nombre}/average — solo esa sala (~1.5s).</p>
+                    <div class="row" style="margin-bottom:.75rem;">
+                        <input type="text" id="avgWsId" class="field" style="flex:1; margin:0;" placeholder="Nombre de la sala"/>
+                        <button class="btn-secondary" onclick="loadAverageByWs()" id="avgWsBtn">
+                            <i class="bi bi-search"></i> Calcular
+                        </button>
+                    </div>
+                    <div class="big-value" id="avgWsValue">—</div>
+                </div>
+
+                <!-- Demostración NO BLOQUEO -->
+                <div class="monitor-card">
+                    <h3>Demostrar el NO BLOQUEO</h3>
+                    <p class="hint">Lanza el promedio (3s) y al instante pide la lista. La lista responde sin esperar.</p>
+                    <button class="btn-primary" onclick="demoNonBlocking()" id="demoBtn">
+                        <i class="bi bi-lightning-charge"></i> Ejecutar demostración
+                    </button>
+                    <div class="console" id="console">Listo para la prueba…</div>
+                </div>
             </div>
 
-            <!-- Columna derecha: feed en vivo -->
+            <!-- ===== Columna derecha: listado + stream en vivo ===== -->
             <div class="monitor-card">
-                <h3>Lecturas en vivo</h3>
-                <p class="muted">Cada lectura nueva aparece aquí automáticamente.</p>
+                <h3>Lecturas de ocupación <span class="small" id="feedCount">(0)</span></h3>
+                <p class="hint">Se cargan al entrar (GET /readings) y las nuevas llegan solas por el stream (SSE)
+                    cada vez que confirmas o cancelas una reserva.</p>
                 <div class="feed" id="feed">
-                    <span class="muted" id="feedEmpty">Esperando lecturas…</span>
+                    <span class="small" id="feedEmpty">Aún no hay lecturas. Confirma una reserva o pulsa “Recalcular ocupación ahora”.</span>
                 </div>
             </div>
 
@@ -90,11 +120,13 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const feed = document.getElementById('feed');
-    const status = document.getElementById('connStatus');
+    const feedCount = document.getElementById('feedCount');
+    const statusEl = document.getElementById('connStatus');
+    let total = 0;
 
     function occClass(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
 
-    function addToFeed(r) {
+    function renderReading(r, prepend) {
         const empty = document.getElementById('feedEmpty');
         if (empty) empty.remove();
         const time = r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : '';
@@ -102,82 +134,107 @@
         item.className = 'feed-item';
         item.innerHTML = `<strong>${r.workspaceId}</strong> ·
             <span class="occ ${occClass(r.occupancyPercentage)}">${r.occupancyPercentage}%</span>
-            <span class="muted"> · ${time}</span>`;
-        feed.prepend(item);
+            <span class="small"> · ${time}</span>`;
+        if (prepend) feed.prepend(item); else feed.appendChild(item);
+        total++;
+        feedCount.textContent = `(${total})`;
     }
 
-    // ---- SSE: aquí se consume el stream reactivo (Flux) ----
+    // Cargar TODAS las lecturas al entrar (así el listado no parte de cero)
+    async function loadAll() {
+        try {
+            const data = await fetch('/api/monitor/readings').then(r => r.json());
+            data.forEach(r => renderReading(r, false));
+        } catch (e) { /* vacío */ }
+    }
+
+    // Stream en vivo (SSE): las lecturas reales aparecen solas
     function connectStream() {
         const source = new EventSource('/api/monitor/readings/stream');
         source.onopen = () => {
-            status.className = 'status on';
-            status.innerHTML = '<span class="dot"></span> Conectado';
+            statusEl.className = 'status on';
+            statusEl.innerHTML = '<span class="dot"></span> Conectado';
         };
-        source.onmessage = (e) => addToFeed(JSON.parse(e.data));
+        source.onmessage = (e) => renderReading(JSON.parse(e.data), true);
         source.onerror = () => {
-            status.className = 'status off';
-            status.innerHTML = '<span class="dot"></span> Desconectado';
+            statusEl.className = 'status off';
+            statusEl.innerHTML = '<span class="dot"></span> Desconectado';
         };
     }
 
-    // ---- POST de una lectura (Mono) ----
-    async function sendReading() {
-        const workspaceId = document.getElementById('workspaceId').value.trim();
-        const occupancy = parseFloat(document.getElementById('occupancy').value);
-        if (!workspaceId || isNaN(occupancy)) {
-            return showAlert('Completa workspace y ocupación.', true);
-        }
+    // Snapshot: recalcular ocupación real de todas las salas (las lecturas llegan por el stream)
+    async function refreshNow() {
+        const btn = document.getElementById('refreshBtn');
+        const msg = document.getElementById('refreshMsg');
+        btn.disabled = true; msg.textContent = 'Calculando…';
         try {
-            const res = await fetch('/api/monitor/readings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workspaceId, occupancyPercentage: occupancy })
-            });
-            if (!res.ok) throw new Error('Error ' + res.status);
-            document.getElementById('occupancy').value = '';
-            showAlert('Lectura enviada.', false);
-        } catch (err) {
-            showAlert('No se pudo enviar: ' + err.message, true);
-        }
+            const res = await fetch('/api/monitor/refresh', { method: 'POST' });
+            const list = await res.json();
+            msg.textContent = `${list.length} salas recalculadas`;
+        } catch (err) { msg.textContent = 'Error'; }
+        finally { btn.disabled = false; }
     }
 
-    // ---- GET promedio (Mono asíncrono ~3s) ----
+    // Promedio global asíncrono (~3s)
     async function loadAverage() {
         const btn = document.getElementById('avgBtn');
         const out = document.getElementById('avgValue');
-        btn.disabled = true;
-        out.textContent = 'Calculando…';
+        btn.disabled = true; out.textContent = 'Calculando…';
         try {
-            const res = await fetch('/api/monitor/readings/average');
-            const value = await res.json();
-            out.textContent = value.toFixed(2) + ' %';
-        } catch (err) {
-            out.textContent = 'Error';
-        } finally {
-            btn.disabled = false;
-        }
+            out.textContent = (await fetch('/api/monitor/readings/average').then(r => r.json())).toFixed(2) + ' %';
+        } catch (err) { out.textContent = 'Error'; }
+        finally { btn.disabled = false; }
     }
 
-    // ---- POST recalcular ocupación REAL desde las reservas ----
-    async function refreshReal() {
+    // Promedio por sala (~1.5s)
+    async function loadAverageByWs() {
+        const id = document.getElementById('avgWsId').value.trim();
+        const btn = document.getElementById('avgWsBtn');
+        const out = document.getElementById('avgWsValue');
+        if (!id) return showAlert('Escribe el nombre de una sala.', true);
+        btn.disabled = true; out.textContent = 'Calculando…';
         try {
-            const res = await fetch('/api/monitor/refresh', { method: 'POST' });
-            if (!res.ok) throw new Error('Error ' + res.status);
-            showAlert('Ocupación real recalculada.', false);
-        } catch (err) {
-            showAlert('Error al recalcular: ' + err.message, true);
-        }
+            const v = await fetch(`/api/monitor/readings/${encodeURIComponent(id)}/average`).then(r => r.json());
+            out.textContent = v.toFixed(2) + ' %';
+        } catch (err) { out.textContent = 'Error'; }
+        finally { btn.disabled = false; }
+    }
+
+    // Prueba de NO BLOQUEO: promedio (3s) + lista (instantánea) en paralelo
+    async function demoNonBlocking() {
+        const btn = document.getElementById('demoBtn');
+        const con = document.getElementById('console');
+        btn.disabled = true; con.innerHTML = '';
+        const t0 = performance.now();
+        const log = (html) => {
+            const t = ((performance.now() - t0) / 1000).toFixed(2);
+            con.innerHTML += `[t=${t}s] ${html}\n`;
+            con.scrollTop = con.scrollHeight;
+        };
+
+        log('<span class="wait">Lanzando GET /readings/average (tarda ~3s en segundo plano)...</span>');
+        const avgPromise = fetch('/api/monitor/readings/average')
+            .then(r => r.json())
+            .then(v => log(`<span class="ok">El promedio TERMINO: ${v.toFixed(2)}%</span>`));
+
+        log('Al mismo tiempo pido GET /readings ...');
+        const list = await fetch('/api/monitor/readings').then(r => r.json());
+        log(`<span class="ok">/readings RESPONDIO AL INSTANTE con ${list.length} lecturas (no espero al promedio)</span>`);
+        log('   El servidor no se bloqueo: atendio la lista mientras el promedio seguia en 2do plano.');
+
+        await avgPromise;
+        log('Demostracion finalizada.');
+        btn.disabled = false;
     }
 
     function showAlert(msg, isError) {
         const a = document.getElementById('pageAlert');
-        a.textContent = msg;
-        a.style.display = 'block';
+        a.textContent = msg; a.style.display = 'block';
         a.style.color = isError ? '#991b1b' : '#166534';
         setTimeout(() => a.style.display = 'none', 2500);
     }
 
-    connectStream();
+    loadAll().then(connectStream);
 </script>
 </body>
 </html>
