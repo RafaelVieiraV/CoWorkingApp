@@ -1,5 +1,6 @@
 package ec.edu.espe.coworkingapp.reactive.service;
 
+import ec.edu.espe.coworkingapp.domain.BookingStatus;
 import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 import ec.edu.espe.coworkingapp.service.BookingService;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class BookingPipelineStreamService {
      * Este Flux se sirve directamente como SSE por PaymentController.
      */
     public Flux<String> ejecutarYEmitirEventos() {
-        List<BookingResponseDto> reservasReales = bookingService.findAll();
+        List<BookingResponseDto> reservasReales = bookingService.findByStatus(BookingStatus.CONFIRMADA);
 
         // Sink multicast para empujar cada evento del pipeline como mensaje SSE
         Sinks.Many<String> eventos = Sinks.many().unicast().onBackpressureBuffer();
