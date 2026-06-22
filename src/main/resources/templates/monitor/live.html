@@ -37,9 +37,34 @@
         .small { font-size:.78rem; color:#6b7280; }
         .summary { display:flex; gap:1.5rem; margin-bottom:.85rem; }
         .summary div b { display:block; font-size:1.3rem; color:#111827; }
-        .console { background:#0f172a; color:#cbd5e1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem;
-            border-radius:8px; padding:.75rem; max-height:170px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
-        .console .ok { color:#4ade80; } .console .wait { color:#fbbf24; }
+
+        /* ── Consola del pipeline ── */
+        .pipeline-console {
+            background:#0f172a; color:#cbd5e1;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            font-size:.76rem; border-radius:8px; padding:.75rem;
+            height:220px; overflow-y:auto; white-space:pre-wrap;
+            margin-top:.75rem; line-height:1.6;
+        }
+        .pipeline-console .ev-subscribe { color:#818cf8; }
+        .pipeline-console .ev-next      { color:#4ade80; }
+        .pipeline-console .ev-backpressure { color:#fbbf24; }
+        .pipeline-console .ev-error     { color:#f87171; }
+        .pipeline-console .ev-resume    { color:#fb923c; }
+        .pipeline-console .ev-complete  { color:#34d399; }
+        .pipeline-console .ev-info      { color:#94a3b8; }
+
+        .pipeline-status { display:inline-flex; align-items:center; gap:.4rem; font-size:.75rem;
+            padding:.2rem .5rem; border-radius:999px; margin-left:.5rem; }
+        .pipeline-status.running { background:#fef9c3; color:#854d0e; }
+        .pipeline-status.done    { background:#dcfce7; color:#166534; }
+        .pipeline-status.idle    { background:#f1f5f9; color:#64748b; }
+
+        .btn-pipeline { background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;
+            border-radius:8px; padding:.35rem .75rem; font-size:.8rem; font-weight:600;
+            cursor:pointer; transition:background .15s; }
+        .btn-pipeline:hover { background:#e0e7ff; }
+        .btn-pipeline:disabled { opacity:.5; cursor:default; }
     </style>
 </head>
 <body>
@@ -63,6 +88,8 @@
 
             <!-- ===== Columna izquierda ===== -->
             <div>
+
+                <!-- Promedio (ya existía) -->
                 <div class="monitor-card">
                     <h3>Promedio de pagos</h3>
                     <p class="hint">GET /api/payments/average — asíncrono (~3s) con delayElement, no bloqueante.</p>
@@ -72,9 +99,34 @@
                     </button>
                 </div>
 
+                <!-- ── Pipeline reactivo (NUEVO) ── -->
+                <div class="monitor-card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.25rem;">
+                        <h3 style="margin:0;">
+                            Pipeline de verificación
+                            <span id="pipelineStatus" class="pipeline-status idle">En espera</span>
+                        </h3>
+                        <button class="btn-pipeline" id="pipelineBtn" onclick="runPipeline()">
+                            <i class="bi bi-play-circle"></i> Ejecutar
+                        </button>
+                    </div>
+                    <p class="hint" style="margin-bottom:.5rem;">
+                        Verifica TODAS las reservas reales de la BD vía
+                        <code>GET /api/payments/pipeline-stream</code> (SSE).
+                        Si alguna supera las 12h detecta el error en vivo y recupera el flujo con los datos restantes.
+                    </p>
+                    <div style="display:flex; gap:1rem; font-size:.78rem; color:#6b7280; margin-bottom:.5rem;">
+                        <span>Procesadas: <b id="pipelineCount">0</b></span>
+                        <span>Anómalas: <b id="pipelineErrors" style="color:#dc2626;">0</b></span>
+                    </div>
+                    <div class="pipeline-console" id="pipelineConsole">
+                        <span class="ev-info">— Presiona "Ejecutar" para correr el pipeline sobre las reservas reales —</span>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- ===== Columna derecha: reservas activas ===== -->
+            <!-- ===== Columna derecha: reservas activas (sin cambios) ===== -->
             <div class="monitor-card">
                 <h3>Reservas activas</h3>
                 <p class="hint">Se cargan al entrar (GET /active) y se actualizan solas por el stream (SSE).</p>
@@ -94,9 +146,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // ── Estado de pagos (sin cambios) ───────────────────────────────────────
     const statusEl = document.getElementById('connStatus');
-    const txList = document.getElementById('txList');
-    const map = new Map(); // bookingId -> PaymentView
+    const txList   = document.getElementById('txList');
+    const map      = new Map(); // bookingId -> PaymentView
 
     function fmt(dt) { return dt ? new Date(dt).toLocaleString() : '—'; }
 
@@ -106,8 +159,8 @@
             .sort((a, b) => b.bookingId - a.bookingId);
 
         document.getElementById('countActive').textContent = items.length;
-        document.getElementById('countPaid').textContent = items.filter(t => t.paymentStatus === 'PAGADO').length;
-        document.getElementById('sumActive').textContent =
+        document.getElementById('countPaid').textContent   = items.filter(t => t.paymentStatus === 'PAGADO').length;
+        document.getElementById('sumActive').textContent   =
             items.reduce((s, t) => s + (t.amount || 0), 0).toFixed(2);
 
         txList.innerHTML = '';
@@ -138,7 +191,6 @@
         });
     }
 
-    // Cargar reservas activas reales al entrar
     async function loadActive() {
         try {
             const data = await fetch('/api/payments/active').then(r => r.json());
@@ -147,20 +199,18 @@
         render();
     }
 
-    // Stream en vivo (SSE)
     function connectStream() {
         const source = new EventSource('/api/payments/stream');
-        source.onopen = () => { statusEl.className = 'status on'; statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
+        source.onopen   = () => { statusEl.className = 'status on';  statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
         source.onmessage = (e) => {
             const t = JSON.parse(e.data);
             if (t.paymentStatus === 'CANCELADA') map.delete(t.bookingId);
             else map.set(t.bookingId, t);
             render();
         };
-        source.onerror = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
+        source.onerror  = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
     }
 
-    // Marcar pagado
     async function pay(bookingId) {
         try {
             const res = await fetch(`/api/payments/${bookingId}/pay`, { method: 'POST' });
@@ -169,7 +219,6 @@
         } catch (err) { showAlert('No se pudo pagar: ' + err.message, true); }
     }
 
-    // Cancelar reserva
     async function cancelBooking(bookingId) {
         try {
             const res = await fetch(`/api/payments/${bookingId}/cancel`, { method: 'POST' });
@@ -178,7 +227,6 @@
         } catch (err) { showAlert('No se pudo cancelar: ' + err.message, true); }
     }
 
-    // Promedio asíncrono (~3s)
     async function loadAverage() {
         const btn = document.getElementById('avgBtn');
         const out = document.getElementById('avgValue');
@@ -188,24 +236,82 @@
         finally { btn.disabled = false; }
     }
 
-    // Prueba de NO BLOQUEO
-    async function demoNonBlocking() {
-        const btn = document.getElementById('demoBtn');
-        const con = document.getElementById('console');
-        btn.disabled = true; con.innerHTML = '';
-        const t0 = performance.now();
-        const log = (html) => {
-            const t = ((performance.now() - t0) / 1000).toFixed(2);
-            con.innerHTML += `[t=${t}s] ${html}\n`; con.scrollTop = con.scrollHeight;
+    // ── Pipeline reactivo SSE (NUEVO) ───────────────────────────────────────
+    let pipelineSource = null;
+
+    function runPipeline() {
+        // Si hay un stream anterior abierto, lo cerramos primero
+        if (pipelineSource) { pipelineSource.close(); pipelineSource = null; }
+
+        const consola   = document.getElementById('pipelineConsole');
+        const btn       = document.getElementById('pipelineBtn');
+        const statusBadge = document.getElementById('pipelineStatus');
+        const countEl   = document.getElementById('pipelineCount');
+        const errorsEl  = document.getElementById('pipelineErrors');
+
+        // Resetear estado visual
+        consola.innerHTML = '';
+        countEl.textContent  = '0';
+        errorsEl.textContent = '0';
+        btn.disabled = true;
+        statusBadge.className = 'pipeline-status running';
+        statusBadge.textContent = 'Ejecutando…';
+
+        let processedCount = 0;
+        let errorCount     = 0;
+
+        function logLine(text, cssClass) {
+            const span = document.createElement('span');
+            span.className = cssClass;
+            span.textContent = text + '\n';
+            consola.appendChild(span);
+            consola.scrollTop = consola.scrollHeight;
+        }
+
+        // Abre SSE al endpoint del pipeline
+        pipelineSource = new EventSource('/api/payments/pipeline-stream');
+
+        pipelineSource.onmessage = (e) => {
+            const msg = e.data;
+
+            if (msg.startsWith('[onSubscribe]')) {
+                logLine(msg, 'ev-subscribe');
+            } else if (msg.startsWith('[onNext]')) {
+                processedCount++;
+                countEl.textContent = processedCount;
+                logLine(msg, 'ev-next');
+            } else if (msg.startsWith('[backpressure]')) {
+                logLine(msg, 'ev-backpressure');
+            } else if (msg.startsWith('[onError]')) {
+                errorCount++;
+                errorsEl.textContent = errorCount;
+                logLine(msg, 'ev-error');
+            } else if (msg.startsWith('[onErrorResume]')) {
+                logLine(msg, 'ev-resume');
+            } else if (msg.startsWith('[onComplete]')) {
+                logLine(msg, 'ev-complete');
+                // El pipeline terminó: cerrar SSE y restaurar botón
+                pipelineSource.close();
+                pipelineSource = null;
+                btn.disabled = false;
+                statusBadge.className = 'pipeline-status done';
+                statusBadge.textContent = 'Completado';
+            } else {
+                logLine(msg, 'ev-info');
+            }
         };
-        log('<span class="wait">Lanzando GET /average (tarda ~3s en segundo plano)...</span>');
-        const avgPromise = fetch('/api/payments/average').then(r => r.json())
-            .then(v => log(`<span class="ok">El promedio TERMINO: $${v.toFixed(2)}</span>`));
-        log('Al mismo tiempo pido GET /api/payments ...');
-        const lst = await fetch('/api/payments').then(r => r.json());
-        log(`<span class="ok">La lista RESPONDIO AL INSTANTE con ${lst.length} reservas (no espero al promedio)</span>`);
-        log('   El servidor no se bloqueo: atendio la lista mientras el promedio seguia en 2do plano.');
-        await avgPromise; log('Demostracion finalizada.'); btn.disabled = false;
+
+        pipelineSource.onerror = () => {
+            // Si el servidor cierra el stream, EventSource reporta error,si el pipeline ya terminó
+            if (pipelineSource) {
+                logLine('[conexión SSE cerrada]', 'ev-info');
+                pipelineSource.close();
+                pipelineSource = null;
+                btn.disabled = false;
+                statusBadge.className = 'pipeline-status idle';
+                statusBadge.textContent = 'En espera';
+            }
+        };
     }
 
     function showAlert(msg, isError) {
