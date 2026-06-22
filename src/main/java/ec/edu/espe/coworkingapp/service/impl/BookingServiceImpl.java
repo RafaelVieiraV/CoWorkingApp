@@ -6,7 +6,7 @@ import ec.edu.espe.coworkingapp.domain.Member;
 import ec.edu.espe.coworkingapp.domain.Workspace;
 import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
 import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
-import ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher;
+import ec.edu.espe.coworkingapp.reactive.service.PaymentPublisher;
 import ec.edu.espe.coworkingapp.repository.BookingRepository;
 import ec.edu.espe.coworkingapp.repository.MemberRepository;
 import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
@@ -17,7 +17,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -31,16 +30,16 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final MemberRepository memberRepository;
     private final WorkspaceRepository workspaceRepository;
-    private final OccupancyPublisher occupancyPublisher;
+    private final PaymentPublisher paymentPublisher;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               MemberRepository memberRepository,
                               WorkspaceRepository workspaceRepository,
-                              OccupancyPublisher occupancyPublisher) {
+                              PaymentPublisher paymentPublisher) {
         this.bookingRepository = bookingRepository;
         this.memberRepository = memberRepository;
         this.workspaceRepository = workspaceRepository;
-        this.occupancyPublisher = occupancyPublisher;
+        this.paymentPublisher = paymentPublisher;
     }
 
     @Override
@@ -198,14 +197,9 @@ public class BookingServiceImpl implements BookingService {
         Booking b = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
-        // Capturamos sala y día ANTES de borrar
-        Long workspaceId = b.getWorkspace().getId();
-        LocalDate day = b.getStartDatetime().toLocalDate();
-
+        // Cancela el pago asociado (si existe) y luego elimina la reserva
+        paymentPublisher.cancelForBooking(id);
         bookingRepository.delete(b);
-
-        // Recalculamos el aforo de ese día YA sin esta reserva -> baja al instante
-        occupancyPublisher.publishForWorkspaceDay(workspaceId, day);
     }
 
     public BookingResponseDto confirm(Long id) {
@@ -221,8 +215,8 @@ public class BookingServiceImpl implements BookingService {
         b.setStatus(BookingStatus.CONFIRMADA);
         BookingResponseDto res = toResponse(bookingRepository.save(b));
 
-        // El aforo del día sube al confirmar
-        occupancyPublisher.publishForWorkspaceDay(b.getWorkspace().getId(), b.getStartDatetime().toLocalDate());
+        // Al confirmar se genera la transacción de pago (ACTIVA) y se emite al stream
+        paymentPublisher.registerForBooking(b);
         return res;
     }
 
@@ -236,8 +230,8 @@ public class BookingServiceImpl implements BookingService {
         b.setStatus(BookingStatus.CANCELADA);
         BookingResponseDto res = toResponse(bookingRepository.save(b));
 
-        // El aforo del día baja al cancelar
-        occupancyPublisher.publishForWorkspaceDay(b.getWorkspace().getId(), b.getStartDatetime().toLocalDate());
+        // Al cancelar la reserva se cancela su pago y se emite el cambio al stream
+        paymentPublisher.cancelForBooking(id);
         return res;
     }
 
