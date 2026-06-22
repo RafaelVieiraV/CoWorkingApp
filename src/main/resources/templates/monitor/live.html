@@ -18,7 +18,7 @@
         .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-        /* ── Tarjetas de reservas activas (sin cambios) ── */
+        /* ── Tarjetas de reservas activas ── */
         .tx-list { max-height:520px; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
         .tx-item { border:1px solid #e5e7eb; background:#f9fafb; border-radius:8px; padding:.7rem .85rem; animation:slideIn .3s ease; }
         .tx-item.pagado   { border-left:4px solid #16a34a; }
@@ -78,7 +78,7 @@
         .pl-card.ev-backpressure {
             background:#fffbeb; border-color:#fde68a; border-left:4px solid #f59e0b;
         }
-        /* Tarjeta de error (reserva anómala detectada) */
+        /* Tarjeta de error (reserva erronea detectada) */
         .pl-card.ev-error {
             background:#fef2f2; border-color:#fecaca; border-left:4px solid #dc2626;
         }
@@ -136,7 +136,7 @@
             <!-- ===== Columna izquierda ===== -->
             <div>
 
-                <!-- Promedio (existía, sin cambios) -->
+                <!-- Promedio-->
                 <div class="monitor-card">
                     <h3>Promedio de pagos</h3>
                     <p class="hint">GET /api/payments/average — asíncrono (~3s) con delayElement, no bloqueante.</p>
@@ -146,7 +146,7 @@
                     </button>
                 </div>
 
-                <!-- ── Pipeline de verificación (NUEVO, estilo tarjetas) ── -->
+                <!-- ── Pipeline de verificación── -->
                 <div class="monitor-card">
                     <div class="pipeline-header">
                         <h3 style="margin:0;">
@@ -159,29 +159,29 @@
                     </div>
                     <p class="hint" style="margin-bottom:.4rem;">
                         Corre el pipeline reactivo (Publisher → filter → map → delayElements → backpressure → onError → onErrorResume → onComplete)
-                        sobre <strong>todas las reservas reales</strong> de la BD.
-                        Reservas &gt; 12h son detectadas como anómalas y el flujo se recupera automáticamente.
+                        sobre <strong>todas las reservas</strong>.
+                        Reservas &gt; 12h son detectadas como erroneas y el flujo se recupera automaticamente.
                     </p>
 
                     <div class="pipeline-stats">
                         <span>Evaluadas: <b id="statTotal">0</b></span>
                         <span>Procesadas: <b id="statOk">0</b></span>
-                        <span class="stat-error">Anómalas: <b id="statErrors">0</b></span>
+                        <span class="stat-error">Erroneas: <b id="statErrors">0</b></span>
                         <span>Recuperadas: <b id="statRecovered">0</b></span>
                     </div>
 
                     <div class="pipeline-list" id="pipelineList">
                         <div class="pipeline-empty">
                             <div class="icon">⚡</div>
-                            Presiona <strong>Ejecutar</strong> para iniciar la verificación
-                            sobre las reservas reales de la base de datos.
+                            <strong>Ejecutar</strong> para iniciar la verificación
+                            sobre las reservas.
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            <!-- ===== Columna derecha: reservas activas (sin cambios) ===== -->
+            <!-- ===== Columna derecha: reservas activas===== -->
             <div class="monitor-card">
                 <h3>Reservas activas</h3>
                 <p class="hint">Se cargan al entrar (GET /active) y se actualizan solas por el stream (SSE).</p>
@@ -201,7 +201,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // ── Estado de pagos (sin cambios respecto al original) ──────────────────
+    // ── Estado de pagos ──────────────────
     const statusEl = document.getElementById('connStatus');
     const txList   = document.getElementById('txList');
     const map      = new Map();
@@ -378,12 +378,12 @@
                     '⏸ Backpressure', 'request(2)', 'tag-bp',
                     texto, 'El subscriber pidió el siguiente lote de 2 reservas.');
 
-                // ── onError (reserva anómala detectada) ─────────────────────────
+                // ── onError ─────────────────────────
             } else if (msg.startsWith('[onError]')) {
                 statErrors++;
                 document.getElementById('statErrors').textContent = statErrors;
                 badge.className   = 'pipeline-badge error';
-                badge.textContent = '⚠ Error detectado';
+                badge.textContent = 'Error detectado';
 
                 const detalle = msg.replace('[onError] ', '');
                 addCard('ev-error',
