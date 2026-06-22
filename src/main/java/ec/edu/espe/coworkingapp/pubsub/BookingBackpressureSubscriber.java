@@ -12,7 +12,6 @@ import java.util.concurrent.CountDownLatch;
  consume el flujo de reservas (BookingResponseDto) aplicando
  backpressure manual: solicita las reservas de a 2 en 2 con
  subscription.request(2).
- Solo recibe lo que el Publisher le entrega; no genera ni transforma
  */
 public class BookingBackpressureSubscriber implements Subscriber<BookingResponseDto> {
 
