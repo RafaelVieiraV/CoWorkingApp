@@ -7,46 +7,43 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class WorkspaceMonitorService {
 
     private final WorkspaceReadingRepository repository;
-    private final ec.edu.espe.coworkingapp.repository.WorkspaceRepository workspaceRepository;
-    private final ec.edu.espe.coworkingapp.repository.BookingRepository bookingRepository;
 
-
-    public WorkspaceMonitorService(WorkspaceReadingRepository repository,
-                                   ec.edu.espe.coworkingapp.repository.WorkspaceRepository workspaceRepository,
-                                   ec.edu.espe.coworkingapp.repository.BookingRepository bookingRepository) {
+    public WorkspaceMonitorService(WorkspaceReadingRepository repository) {
         this.repository = repository;
-        this.workspaceRepository = workspaceRepository;
-        this.bookingRepository = bookingRepository;
     }
 
-    // Guarda una lectura y devuelve un Mono con la lectura guardada
+    // Guarda una lectura y la devuelve como Mono
     public Mono<WorkspaceReading> saveReading(WorkspaceReading reading) {
         return Mono.fromCallable(() -> repository.save(reading))
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    // Devuelve todas las lecturas como Flux
+    // Todas las lecturas como Flux (devuelve vacío si no hay)
     public Flux<WorkspaceReading> getAllReadings() {
         return repository.findAll();
     }
 
-    // Devuelve el stream en tiempo real
+    // Stream en vivo (hot stream)
     public Flux<WorkspaceReading> getLiveStream() {
         return repository.getLiveStream();
     }
 
-    // Calcula el promedio de ocupación de forma asíncrona
+    // Promedio GLOBAL de ocupación: asíncrono (~3s) y NO bloqueante.
+    // El Thread.sleep corre en boundedElastic, no en el event-loop / hilo de la petición.
     public Mono<Double> getAverageOccupancy() {
         return repository.findAll()
                 .map(WorkspaceReading::getOccupancyPercentage)
                 .collectList()
                 .flatMap(list -> Mono.fromCallable(() -> {
-                    Thread.sleep(3000); // Simula operación costosa
+                    Thread.sleep(3000); // simula operación costosa
                     return list.stream()
                             .mapToDouble(Double::doubleValue)
                             .average()
@@ -54,29 +51,32 @@ public class WorkspaceMonitorService {
                 }).subscribeOn(Schedulers.boundedElastic()));
     }
 
-    // Calcula la ocupación REAL de cada sala desde las reservas confirmadas activas ahora
-    public reactor.core.publisher.Flux<WorkspaceReading> refreshRealOccupancy() {
-        return reactor.core.publisher.Mono.fromCallable(() -> {
-                    java.time.LocalDateTime now =
-                            java.time.LocalDateTime.now(java.time.ZoneId.of("America/Guayaquil"));
+    // ACTIVIDAD 2: promedio de ocupación de UN workspace específico (~1.5s, asíncrono).
+    public Mono<Double> getAverageByWorkspace(String workspaceId) {
+        return repository.findAll()
+                .filter(r -> workspaceId.equals(r.getWorkspaceId())) // solo ese workspace
+                .map(WorkspaceReading::getOccupancyPercentage)
+                .collectList()
+                .flatMap(list -> Mono.fromCallable(() -> {
+                    Thread.sleep(1500); // retardo asíncrono
+                    return list.stream()
+                            .mapToDouble(Double::doubleValue)
+                            .average()
+                            .orElse(0.0);
+                }).subscribeOn(Schedulers.boundedElastic()));
+    }
 
-                    return workspaceRepository.findAll().stream().map(ws -> {
-                        int activos = bookingRepository
-                                .findByWorkspaceIdAndStatusAndStartDatetimeLessThanEqualAndEndDatetimeGreaterThanEqual(
-                                        ws.getId(),
-                                        ec.edu.espe.coworkingapp.domain.BookingStatus.CONFIRMADA,
-                                        now, now)
-                                .size();
-
-                        double capacidad = ws.getCapacity() != null && ws.getCapacity() > 0 ? ws.getCapacity() : 1;
-                        double ocupacion = Math.min(100.0, (activos / capacidad) * 100.0);
-                        ocupacion = Math.round(ocupacion * 100.0) / 100.0;
-
-                        return new WorkspaceReading(ws.getName(), ocupacion, now);
-                    }).toList();
+    // ACTIVIDAD 3: genera lecturas automáticas (1 por segundo durante 10s) con Flux.interval
+    // y las emite al stream existente. Devuelve un mensaje al terminar.
+    public Mono<String> generateReadings() {
+        return Flux.interval(Duration.ofSeconds(1))
+                .take(10) // 10 lecturas => ~10 segundos
+                .map(i -> {
+                    String workspaceId = "sala-" + ThreadLocalRandom.current().nextInt(1, 4); // sala-1..3
+                    double occupancy = Math.round(ThreadLocalRandom.current().nextDouble(0, 100) * 100.0) / 100.0;
+                    return new WorkspaceReading(workspaceId, occupancy, LocalDateTime.now());
                 })
-                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
-                .flatMapMany(reactor.core.publisher.Flux::fromIterable)
-                .doOnNext(repository::save); // guarda y emite cada lectura al stream en vivo
+                .doOnNext(repository::save) // guarda y emite cada lectura al stream en vivo
+                .then(Mono.just("Generación finalizada: 10 lecturas emitidas al stream"));
     }
 }
