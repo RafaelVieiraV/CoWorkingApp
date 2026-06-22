@@ -8,10 +8,13 @@ public class WorkspaceReading {
     // Nombre de la sala
     private String workspaceId;
 
-    // Porcentaje de ocupación de la sala ESE día (0.0 a 100.0)
+    // Cantidad de reservas confirmadas de la sala ese día
+    private Integer reservationCount;
+
+    // % de la jornada operativa que está reservada ese día (horas reservadas ÷ horas jornada)
     private Double occupancyPercentage;
 
-    // Día al que corresponde la ocupación
+    // Día al que corresponde la lectura
     private LocalDate day;
 
     // Momento en que se generó la lectura
@@ -19,8 +22,10 @@ public class WorkspaceReading {
 
     public WorkspaceReading() {}
 
-    public WorkspaceReading(String workspaceId, Double occupancyPercentage, LocalDate day, LocalDateTime timestamp) {
+    public WorkspaceReading(String workspaceId, Integer reservationCount, Double occupancyPercentage,
+                            LocalDate day, LocalDateTime timestamp) {
         this.workspaceId = workspaceId;
+        this.reservationCount = reservationCount;
         this.occupancyPercentage = occupancyPercentage;
         this.day = day;
         this.timestamp = timestamp;
@@ -28,6 +33,8 @@ public class WorkspaceReading {
 
     public String getWorkspaceId() { return workspaceId; }
     public void setWorkspaceId(String workspaceId) { this.workspaceId = workspaceId; }
+    public Integer getReservationCount() { return reservationCount; }
+    public void setReservationCount(Integer reservationCount) { this.reservationCount = reservationCount; }
     public Double getOccupancyPercentage() { return occupancyPercentage; }
     public void setOccupancyPercentage(Double occupancyPercentage) { this.occupancyPercentage = occupancyPercentage; }
     public LocalDate getDay() { return day; }

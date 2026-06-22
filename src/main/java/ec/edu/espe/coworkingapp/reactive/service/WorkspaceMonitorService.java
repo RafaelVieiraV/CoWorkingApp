@@ -31,18 +31,18 @@ public class WorkspaceMonitorService {
         return repository.getLiveStream();
     }
 
-    // Promedio GLOBAL de ocupación: asíncrono (~3s) y NO bloqueante.
+    // Promedio GLOBAL de ocupación (%): asíncrono (~3s) y NO bloqueante.
     public Mono<Double> getAverageOccupancy() {
         return repository.findAll()
                 .map(WorkspaceReading::getOccupancyPercentage)
                 .collectList()
                 .flatMap(list -> Mono.fromCallable(() -> {
-                    Thread.sleep(3000); // simula operación costosa, fuera del hilo de la petición
+                    Thread.sleep(3000);
                     return list.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
                 }).subscribeOn(Schedulers.boundedElastic()));
     }
 
-    // Promedio de ocupación de UNA sala específica (~1.5s, asíncrono).
+    // Promedio de ocupación (%) de UNA sala específica (~1.5s, asíncrono).
     public Mono<Double> getAverageByWorkspace(String workspaceId) {
         return repository.findAll()
                 .filter(r -> workspaceId.equals(r.getWorkspaceId()))
@@ -60,8 +60,9 @@ public class WorkspaceMonitorService {
                 .take(10)
                 .map(i -> {
                     String workspaceId = "sala-" + ThreadLocalRandom.current().nextInt(1, 4);
-                    double occupancy = Math.round(ThreadLocalRandom.current().nextDouble(0, 100) * 100.0) / 100.0;
-                    return new WorkspaceReading(workspaceId, occupancy, LocalDate.now(), LocalDateTime.now());
+                    int reservas = ThreadLocalRandom.current().nextInt(0, 6);
+                    double occupancy = Math.round(Math.min(100.0, reservas * 1.5 / 12.0 * 100.0) * 100.0) / 100.0;
+                    return new WorkspaceReading(workspaceId, reservas, occupancy, LocalDate.now(), LocalDateTime.now());
                 })
                 .doOnNext(repository::save)
                 .then(Mono.just("Generación finalizada: 10 lecturas emitidas al stream"));

@@ -1,5 +1,6 @@
 package ec.edu.espe.coworkingapp.reactive.service;
 
+import ec.edu.espe.coworkingapp.domain.Booking;
 import ec.edu.espe.coworkingapp.domain.BookingStatus;
 import ec.edu.espe.coworkingapp.domain.Workspace;
 import ec.edu.espe.coworkingapp.reactive.model.WorkspaceReading;
@@ -11,14 +12,20 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * Puente entre el flujo MVC (reservas, JPA) y el módulo reactivo.
- * Calcula la ocupación REAL de una sala para un DÍA (reservas confirmadas de ese día ÷ capacidad)
- * y la emite al stream. Lo llama BookingServiceImpl al confirmar, cancelar o eliminar una reserva.
+ * Para una sala y un día calcula:
+ *   - cantidad de reservas confirmadas de ese día
+ *   - % de ocupación = horas reservadas ÷ horas de la jornada operativa (8:00–20:00 = 12h)
+ * y emite la lectura al stream reactivo.
  */
 @Component
 public class OccupancyPublisher {
+
+    // Jornada operativa del coworking en horas (8:00 a 20:00). Sirve de base para el %.
+    private static final double HORAS_JORNADA = 12.0;
 
     private final WorkspaceReadingRepository readingRepository;
     private final WorkspaceRepository workspaceRepository;
@@ -32,10 +39,6 @@ public class OccupancyPublisher {
         this.bookingRepository = bookingRepository;
     }
 
-    /**
-     * Calcula la ocupación de una sala para un día concreto y la emite al stream.
-     * Ocupación = (reservas CONFIRMADAS de ese día ÷ capacidad) × 100.
-     */
     public WorkspaceReading publishForWorkspaceDay(Long workspaceId, LocalDate day) {
         Workspace ws = workspaceRepository.findById(workspaceId).orElse(null);
         if (ws == null) return null;
@@ -43,16 +46,21 @@ public class OccupancyPublisher {
         LocalDateTime inicioDia = day.atStartOfDay();
         LocalDateTime finDia = day.atTime(LocalTime.MAX);
 
-        int reservasDelDia = bookingRepository
+        List<Booking> reservas = bookingRepository
                 .findByWorkspaceIdAndStatusAndStartDatetimeBetween(
-                        workspaceId, BookingStatus.CONFIRMADA, inicioDia, finDia)
-                .size();
+                        workspaceId, BookingStatus.CONFIRMADA, inicioDia, finDia);
 
-        double capacidad = (ws.getCapacity() != null && ws.getCapacity() > 0) ? ws.getCapacity() : 1;
-        double ocupacion = Math.min(100.0, (reservasDelDia / capacidad) * 100.0);
+        int cantidad = reservas.size();
+
+        // % = horas reservadas ese día ÷ horas de la jornada (tope 100%)
+        double horasReservadas = reservas.stream()
+                .mapToDouble(b -> b.getTotalHours() != null ? b.getTotalHours() : 0.0)
+                .sum();
+        double ocupacion = Math.min(100.0, (horasReservadas / HORAS_JORNADA) * 100.0);
         ocupacion = Math.round(ocupacion * 100.0) / 100.0;
 
         // save() guarda en memoria y emite al stream reactivo (Sinks)
-        return readingRepository.save(new WorkspaceReading(ws.getName(), ocupacion, day, LocalDateTime.now()));
+        return readingRepository.save(
+                new WorkspaceReading(ws.getName(), cantidad, ocupacion, day, LocalDateTime.now()));
     }
 }

@@ -19,18 +19,26 @@
         .status.off { background:#fee2e2; color:#991b1b; }
         .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .feed { max-height:480px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
+        .feed { max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
         .feed-item { border-left:3px solid #6366f1; background:#f9fafb; padding:.55rem .8rem; border-radius:6px; font-size:.85rem; animation:slideIn .3s ease; }
         @keyframes slideIn { from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none} }
         .feed-item .line1 { display:flex; justify-content:space-between; align-items:center; }
-        .occ { font-weight:700; }
+        .count-badge { font-weight:700; color:#4f46e5; }
+        .occ { font-weight:600; }
         .occ.high { color:#dc2626; } .occ.mid { color:#d97706; } .occ.low { color:#16a34a; }
         .day { color:#4b5563; font-size:.8rem; }
         .big-value { font-size:1.8rem; font-weight:700; color:#4f46e5; margin:.25rem 0 .75rem; }
         .small { font-size:.78rem; color:#6b7280; }
         .console { background:#0f172a; color:#cbd5e1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem;
-            border-radius:8px; padding:.75rem; max-height:180px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
+            border-radius:8px; padding:.75rem; max-height:170px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
         .console .ok { color:#4ade80; } .console .wait { color:#fbbf24; }
+        .bk-list { max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; margin-top:.75rem; }
+        .bk-item { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .7rem; font-size:.82rem; }
+        .bk-item .bk-top { display:flex; justify-content:space-between; }
+        .pill { font-size:.68rem; padding:.1rem .5rem; border-radius:999px; font-weight:600; }
+        .pill.CONFIRMADA { background:#dcfce7; color:#166534; }
+        .pill.PENDIENTE  { background:#fef9c3; color:#854d0e; }
+        .pill.CANCELADA  { background:#fee2e2; color:#991b1b; }
     </style>
 </head>
 <body>
@@ -43,15 +51,15 @@
         <div class="page-header">
             <div>
                 <h1 class="page-title">Monitor en Vivo</h1>
-                <p class="page-subtitle">Aforo diario de los espacios en tiempo real (WebFlux · SSE)</p>
+                <p class="page-subtitle">Reservas por sala y día en tiempo real (WebFlux · SSE)</p>
             </div>
             <span id="connStatus" class="status off"><span class="dot"></span> Desconectado</span>
         </div>
 
         <div class="banner">
             <i class="bi bi-info-circle"></i>
-            <span>El aforo se actualiza <strong>solo</strong> cuando confirmas, cancelas o eliminas una reserva en
-            <strong>Reservas</strong>. Muestra, por sala y por día, las reservas confirmadas frente a la capacidad.</span>
+            <span>Las lecturas se actualizan <strong>solas</strong> al confirmar, cancelar o eliminar una reserva.
+            El % representa qué parte de la jornada (12h) está reservada ese día.</span>
         </div>
 
         <div id="pageAlert" class="page-alert" style="display:none;"></div>
@@ -60,9 +68,19 @@
 
             <!-- ===== Columna izquierda ===== -->
             <div>
+                <!-- Todas las reservas -->
+                <div class="monitor-card">
+                    <h3>Todas las reservas</h3>
+                    <p class="hint">GET /api/bookings — trae el listado completo de reservas del sistema.</p>
+                    <button class="btn-primary" onclick="loadAllBookings()" id="bkBtn">
+                        <i class="bi bi-card-list"></i> Obtener todas las reservas
+                    </button>
+                    <div class="bk-list" id="bkList"></div>
+                </div>
+
                 <!-- Promedio global -->
                 <div class="monitor-card">
-                    <h3>Promedio de aforo (global)</h3>
+                    <h3>Promedio de ocupación (global)</h3>
                     <p class="hint">GET /readings/average — asíncrono (~3s), no bloqueante.</p>
                     <div class="big-value" id="avgValue">—</div>
                     <button class="btn-secondary" onclick="loadAverage()" id="avgBtn">
@@ -94,12 +112,12 @@
                 </div>
             </div>
 
-            <!-- ===== Columna derecha: listado + stream en vivo ===== -->
+            <!-- ===== Columna derecha: lecturas en vivo ===== -->
             <div class="monitor-card">
-                <h3>Aforo por sala y día <span class="small" id="feedCount">(0)</span></h3>
+                <h3>Reservas por sala y día <span class="small" id="feedCount">(0)</span></h3>
                 <p class="hint">Se carga al entrar (GET /readings) y se actualiza solo por el stream (SSE).</p>
                 <div class="feed" id="feed">
-                    <span class="small" id="feedEmpty">Aún no hay lecturas. Confirma o elimina una reserva para verlas aparecer.</span>
+                    <span class="small" id="feedEmpty">Aún no hay lecturas. Confirma, cancela o elimina una reserva para verlas.</span>
                 </div>
             </div>
 
@@ -115,72 +133,89 @@
     let total = 0;
 
     function occClass(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
+    function fmt(dt) { return dt ? new Date(dt).toLocaleString() : '—'; }
 
     function renderReading(r, prepend) {
         const empty = document.getElementById('feedEmpty');
         if (empty) empty.remove();
         const updated = r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : '';
+        const plural = r.reservationCount === 1 ? 'reserva' : 'reservas';
         const item = document.createElement('div');
         item.className = 'feed-item';
         item.innerHTML = `
             <div class="line1">
                 <strong>${r.workspaceId}</strong>
-                <span class="occ ${occClass(r.occupancyPercentage)}">${r.occupancyPercentage}%</span>
+                <span class="count-badge">${r.reservationCount} ${plural}</span>
             </div>
-            <div class="day">Día ${r.day ?? '—'} <span class="small">· actualizado ${updated}</span></div>`;
+            <div class="day">Día ${r.day ?? '—'} ·
+                <span class="occ ${occClass(r.occupancyPercentage)}">${r.occupancyPercentage}% de la jornada</span>
+                <span class="small"> · actualizado ${updated}</span>
+            </div>`;
         if (prepend) feed.prepend(item); else feed.appendChild(item);
         total++;
         feedCount.textContent = `(${total})`;
     }
 
-    // Cargar TODAS las lecturas al entrar (no parte de cero)
     async function loadAll() {
         try {
             const data = await fetch('/api/monitor/readings').then(r => r.json());
             data.forEach(r => renderReading(r, false));
-        } catch (e) { /* vacío */ }
+        } catch (e) {}
     }
 
-    // Stream en vivo (SSE): las lecturas reales aparecen solas
     function connectStream() {
         const source = new EventSource('/api/monitor/readings/stream');
-        source.onopen = () => {
-            statusEl.className = 'status on';
-            statusEl.innerHTML = '<span class="dot"></span> Conectado';
-        };
+        source.onopen = () => { statusEl.className = 'status on'; statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
         source.onmessage = (e) => renderReading(JSON.parse(e.data), true);
-        source.onerror = () => {
-            statusEl.className = 'status off';
-            statusEl.innerHTML = '<span class="dot"></span> Desconectado';
-        };
+        source.onerror = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
     }
 
-    // Promedio global asíncrono (~3s)
+    // BOTÓN: obtener todas las reservas (GET /api/bookings)
+    async function loadAllBookings() {
+        const btn = document.getElementById('bkBtn');
+        const list = document.getElementById('bkList');
+        btn.disabled = true; list.innerHTML = '<span class="small">Cargando…</span>';
+        try {
+            const data = await fetch('/api/bookings').then(r => r.json());
+            if (!data.length) { list.innerHTML = '<span class="small">No hay reservas.</span>'; return; }
+            list.innerHTML = '';
+            data.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'bk-item';
+                div.innerHTML = `
+                    <div class="bk-top">
+                        <strong>#${b.id} · ${b.workspaceName}</strong>
+                        <span class="pill ${b.status}">${b.status}</span>
+                    </div>
+                    <div class="small">${b.memberFullName} · ${b.totalHours}h · $${b.totalPrice}</div>
+                    <div class="small">${fmt(b.startDatetime)} → ${fmt(b.endDatetime)}</div>`;
+                list.appendChild(div);
+            });
+        } catch (err) {
+            list.innerHTML = '<span class="small">Error al cargar las reservas.</span>';
+        } finally { btn.disabled = false; }
+    }
+
     async function loadAverage() {
         const btn = document.getElementById('avgBtn');
         const out = document.getElementById('avgValue');
         btn.disabled = true; out.textContent = 'Calculando…';
-        try {
-            out.textContent = (await fetch('/api/monitor/readings/average').then(r => r.json())).toFixed(2) + ' %';
-        } catch (err) { out.textContent = 'Error'; }
+        try { out.textContent = (await fetch('/api/monitor/readings/average').then(r => r.json())).toFixed(2) + ' %'; }
+        catch (err) { out.textContent = 'Error'; }
         finally { btn.disabled = false; }
     }
 
-    // Promedio por sala (~1.5s)
     async function loadAverageByWs() {
         const id = document.getElementById('avgWsId').value.trim();
         const btn = document.getElementById('avgWsBtn');
         const out = document.getElementById('avgWsValue');
         if (!id) return showAlert('Escribe el nombre de una sala.', true);
         btn.disabled = true; out.textContent = 'Calculando…';
-        try {
-            const v = await fetch(`/api/monitor/readings/${encodeURIComponent(id)}/average`).then(r => r.json());
-            out.textContent = v.toFixed(2) + ' %';
-        } catch (err) { out.textContent = 'Error'; }
+        try { out.textContent = (await fetch(`/api/monitor/readings/${encodeURIComponent(id)}/average`).then(r => r.json())).toFixed(2) + ' %'; }
+        catch (err) { out.textContent = 'Error'; }
         finally { btn.disabled = false; }
     }
 
-    // Prueba de NO BLOQUEO
     async function demoNonBlocking() {
         const btn = document.getElementById('demoBtn');
         const con = document.getElementById('console');
@@ -188,20 +223,16 @@
         const t0 = performance.now();
         const log = (html) => {
             const t = ((performance.now() - t0) / 1000).toFixed(2);
-            con.innerHTML += `[t=${t}s] ${html}\n`;
-            con.scrollTop = con.scrollHeight;
+            con.innerHTML += `[t=${t}s] ${html}\n`; con.scrollTop = con.scrollHeight;
         };
         log('<span class="wait">Lanzando GET /readings/average (tarda ~3s en segundo plano)...</span>');
-        const avgPromise = fetch('/api/monitor/readings/average')
-            .then(r => r.json())
+        const avgPromise = fetch('/api/monitor/readings/average').then(r => r.json())
             .then(v => log(`<span class="ok">El promedio TERMINO: ${v.toFixed(2)}%</span>`));
         log('Al mismo tiempo pido GET /readings ...');
-        const list = await fetch('/api/monitor/readings').then(r => r.json());
-        log(`<span class="ok">/readings RESPONDIO AL INSTANTE con ${list.length} lecturas (no espero al promedio)</span>`);
+        const lst = await fetch('/api/monitor/readings').then(r => r.json());
+        log(`<span class="ok">/readings RESPONDIO AL INSTANTE con ${lst.length} lecturas (no espero al promedio)</span>`);
         log('   El servidor no se bloqueo: atendio la lista mientras el promedio seguia en 2do plano.');
-        await avgPromise;
-        log('Demostracion finalizada.');
-        btn.disabled = false;
+        await avgPromise; log('Demostracion finalizada.'); btn.disabled = false;
     }
 
     function showAlert(msg, isError) {
