@@ -24,7 +24,7 @@ public class BookingPipelineService {
         this.bookingService = bookingService;
     }
 
-    //Corre el pipeline reactivo sobre TODAS las reservas reales actuales
+    //Corre el pipeline reactivo sobre todas las reservas
     public BookingPipelineResult verificarReservasReales() {
         List<BookingResponseDto> reservasReales = bookingService.findAll();
 
@@ -51,13 +51,13 @@ public class BookingPipelineService {
                     }
                     return reserva;
                 })
-                // simula verificación asíncrona en vivo, una reserva real cada 300ms
+                // una reserva real cada 300ms
                 .delayElements(Duration.ofMillis(300))
                 .onErrorResume(error -> {
                     System.out.println("[onErrorResume] " + error.getMessage());
                     int desde = ultimaPosicionEvaluada.get() + 1;
                     if (desde >= reservasReales.size()) {
-                        System.out.println("[onErrorResume] No quedan más reservas reales por verificar.");
+                        System.out.println("[onErrorResume] No quedan mas reservas por verificar.");
                         return Flux.empty();
                     }
                     List<BookingResponseDto> restantes = reservasReales.subList(desde, reservasReales.size());
