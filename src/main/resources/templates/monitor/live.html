@@ -3,7 +3,7 @@
 <head>
     <th:block th:replace="~{fragments/head :: head}"/>
     <link th:href="@{/css/app.css}" rel="stylesheet"/>
-    <title>Monitor en Vivo - CoWorking App</title>
+    <title>Transacciones en Vivo - CoWorking App</title>
     <style>
         .monitor-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5rem; align-items: start; }
         .monitor-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; }
@@ -11,34 +11,27 @@
         .monitor-card .hint { color:#9ca3af; font-size:.78rem; margin:0 0 1rem; }
         .banner { background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; border-radius:10px;
             padding:.75rem 1rem; font-size:.85rem; margin-bottom:1.5rem; display:flex; gap:.5rem; align-items:flex-start; }
-        .field { margin-bottom:.75rem; }
         .field input { width:100%; padding:.5rem .75rem; border:1px solid #d1d5db; border-radius:8px; }
-        .row { display:flex; gap:.5rem; flex-wrap:wrap; }
         .status { display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; padding:.25rem .6rem; border-radius:999px; }
         .status.on  { background:#dcfce7; color:#166534; }
         .status.off { background:#fee2e2; color:#991b1b; }
         .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .feed { max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
-        .feed-item { border-left:3px solid #6366f1; background:#f9fafb; padding:.55rem .8rem; border-radius:6px; font-size:.85rem; animation:slideIn .3s ease; }
+        .tx-list { max-height:460px; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
+        .tx-item { border:1px solid #e5e7eb; border-left:3px solid #16a34a; background:#f9fafb; border-radius:8px; padding:.7rem .85rem; animation:slideIn .3s ease; }
         @keyframes slideIn { from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none} }
-        .feed-item .line1 { display:flex; justify-content:space-between; align-items:center; }
-        .count-badge { font-weight:700; color:#4f46e5; }
-        .occ { font-weight:600; }
-        .occ.high { color:#dc2626; } .occ.mid { color:#d97706; } .occ.low { color:#16a34a; }
-        .day { color:#4b5563; font-size:.8rem; }
+        .tx-top { display:flex; justify-content:space-between; align-items:center; }
+        .tx-amount { font-weight:700; color:#16a34a; font-size:1.05rem; }
+        .tx-sub { color:#6b7280; font-size:.8rem; margin:.15rem 0 .5rem; }
+        .btn-cancel { background:#fee2e2; color:#991b1b; border:none; border-radius:8px; padding:.35rem .7rem; font-size:.8rem; font-weight:600; cursor:pointer; }
+        .btn-cancel:hover { background:#fecaca; }
         .big-value { font-size:1.8rem; font-weight:700; color:#4f46e5; margin:.25rem 0 .75rem; }
         .small { font-size:.78rem; color:#6b7280; }
+        .summary { display:flex; gap:1.25rem; margin-bottom:.75rem; }
+        .summary div b { display:block; font-size:1.3rem; color:#111827; }
         .console { background:#0f172a; color:#cbd5e1; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.78rem;
             border-radius:8px; padding:.75rem; max-height:170px; overflow-y:auto; white-space:pre-wrap; margin-top:.75rem; }
         .console .ok { color:#4ade80; } .console .wait { color:#fbbf24; }
-        .bk-list { max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; margin-top:.75rem; }
-        .bk-item { border:1px solid #e5e7eb; border-radius:8px; padding:.5rem .7rem; font-size:.82rem; }
-        .bk-item .bk-top { display:flex; justify-content:space-between; }
-        .pill { font-size:.68rem; padding:.1rem .5rem; border-radius:999px; font-weight:600; }
-        .pill.CONFIRMADA { background:#dcfce7; color:#166534; }
-        .pill.PENDIENTE  { background:#fef9c3; color:#854d0e; }
-        .pill.CANCELADA  { background:#fee2e2; color:#991b1b; }
     </style>
 </head>
 <body>
@@ -50,16 +43,16 @@
 
         <div class="page-header">
             <div>
-                <h1 class="page-title">Monitor en Vivo</h1>
-                <p class="page-subtitle">Reservas por sala y día en tiempo real (WebFlux · SSE)</p>
+                <h1 class="page-title">Transacciones en Vivo</h1>
+                <p class="page-subtitle">Pagos de las reservas activas en tiempo real (WebFlux · SSE)</p>
             </div>
             <span id="connStatus" class="status off"><span class="dot"></span> Desconectado</span>
         </div>
 
         <div class="banner">
             <i class="bi bi-info-circle"></i>
-            <span>Las lecturas se actualizan <strong>solas</strong> al confirmar, cancelar o eliminar una reserva.
-            El % representa qué parte de la jornada (12h) está reservada ese día.</span>
+            <span>Cada vez que <strong>confirmas</strong> una reserva se genera su pago y aparece aquí.
+            Si <strong>cancelas el pago</strong>, la reserva se cancela y desaparece de la lista, todo en vivo.</span>
         </div>
 
         <div id="pageAlert" class="page-alert" style="display:none;"></div>
@@ -68,40 +61,15 @@
 
             <!-- ===== Columna izquierda ===== -->
             <div>
-                <!-- Todas las reservas -->
                 <div class="monitor-card">
-                    <h3>Todas las reservas</h3>
-                    <p class="hint">GET /api/bookings — trae el listado completo de reservas del sistema.</p>
-                    <button class="btn-primary" onclick="loadAllBookings()" id="bkBtn">
-                        <i class="bi bi-card-list"></i> Obtener todas las reservas
-                    </button>
-                    <div class="bk-list" id="bkList"></div>
-                </div>
-
-                <!-- Promedio global -->
-                <div class="monitor-card">
-                    <h3>Promedio de ocupación (global)</h3>
-                    <p class="hint">GET /readings/average — asíncrono (~3s), no bloqueante.</p>
+                    <h3>Promedio de pagos activos</h3>
+                    <p class="hint">GET /api/payments/average — asíncrono (~3s) con delayElement, no bloqueante.</p>
                     <div class="big-value" id="avgValue">—</div>
                     <button class="btn-secondary" onclick="loadAverage()" id="avgBtn">
                         <i class="bi bi-calculator"></i> Calcular promedio
                     </button>
                 </div>
 
-                <!-- Promedio por sala -->
-                <div class="monitor-card">
-                    <h3>Promedio por sala</h3>
-                    <p class="hint">GET /readings/{sala}/average — solo esa sala (~1.5s).</p>
-                    <div class="row" style="margin-bottom:.75rem;">
-                        <input type="text" id="avgWsId" class="field" style="flex:1; margin:0;" placeholder="Nombre de la sala"/>
-                        <button class="btn-secondary" onclick="loadAverageByWs()" id="avgWsBtn">
-                            <i class="bi bi-search"></i> Calcular
-                        </button>
-                    </div>
-                    <div class="big-value" id="avgWsValue">—</div>
-                </div>
-
-                <!-- Demostración NO BLOQUEO -->
                 <div class="monitor-card">
                     <h3>Demostrar el NO BLOQUEO</h3>
                     <p class="hint">Lanza el promedio (3s) y al instante pide la lista. La lista responde sin esperar.</p>
@@ -112,12 +80,16 @@
                 </div>
             </div>
 
-            <!-- ===== Columna derecha: lecturas en vivo ===== -->
+            <!-- ===== Columna derecha: reservas activas ===== -->
             <div class="monitor-card">
-                <h3>Reservas por sala y día <span class="small" id="feedCount">(0)</span></h3>
-                <p class="hint">Se carga al entrar (GET /readings) y se actualiza solo por el stream (SSE).</p>
-                <div class="feed" id="feed">
-                    <span class="small" id="feedEmpty">Aún no hay lecturas. Confirma, cancela o elimina una reserva para verlas.</span>
+                <h3>Reservas activas</h3>
+                <p class="hint">Se cargan al entrar (GET /active) y se actualizan solas por el stream (SSE).</p>
+                <div class="summary">
+                    <div class="small">Activas <b id="countActive">0</b></div>
+                    <div class="small">Total $ <b id="sumActive">0.00</b></div>
+                </div>
+                <div class="tx-list" id="txList">
+                    <span class="small" id="txEmpty">No hay reservas activas. Confirma una reserva para verla aquí.</span>
                 </div>
             </div>
 
@@ -127,95 +99,81 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const feed = document.getElementById('feed');
-    const feedCount = document.getElementById('feedCount');
     const statusEl = document.getElementById('connStatus');
-    let total = 0;
+    const txList = document.getElementById('txList');
+    const txMap = new Map(); // id -> transacción (estado actual)
 
-    function occClass(v) { return v >= 80 ? 'high' : v >= 50 ? 'mid' : 'low'; }
     function fmt(dt) { return dt ? new Date(dt).toLocaleString() : '—'; }
 
-    function renderReading(r, prepend) {
-        const empty = document.getElementById('feedEmpty');
-        if (empty) empty.remove();
-        const updated = r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : '';
-        const plural = r.reservationCount === 1 ? 'reserva' : 'reservas';
-        const item = document.createElement('div');
-        item.className = 'feed-item';
-        item.innerHTML = `
-            <div class="line1">
-                <strong>${r.workspaceId}</strong>
-                <span class="count-badge">${r.reservationCount} ${plural}</span>
-            </div>
-            <div class="day">Día ${r.day ?? '—'} ·
-                <span class="occ ${occClass(r.occupancyPercentage)}">${r.occupancyPercentage}% de la jornada</span>
-                <span class="small"> · actualizado ${updated}</span>
-            </div>`;
-        if (prepend) feed.prepend(item); else feed.appendChild(item);
-        total++;
-        feedCount.textContent = `(${total})`;
+    function renderActive() {
+        const activas = [...txMap.values()].filter(t => t.status === 'ACTIVA')
+            .sort((a, b) => b.id - a.id);
+        document.getElementById('countActive').textContent = activas.length;
+        document.getElementById('sumActive').textContent =
+            activas.reduce((s, t) => s + (t.amount || 0), 0).toFixed(2);
+
+        txList.innerHTML = '';
+        if (!activas.length) {
+            txList.innerHTML = '<span class="small">No hay reservas activas. Confirma una reserva para verla aquí.</span>';
+            return;
+        }
+        activas.forEach(t => {
+            const div = document.createElement('div');
+            div.className = 'tx-item';
+            div.innerHTML = `
+                <div class="tx-top">
+                    <strong>${t.workspaceName ?? 'Pago'} </strong>
+                    <span class="tx-amount">$${(t.amount ?? 0).toFixed(2)}</span>
+                </div>
+                <div class="tx-sub">${t.memberName ?? '—'} · pago #${t.id} · ${fmt(t.timestamp)}</div>
+                <button class="btn-cancel" onclick="cancelPayment(${t.id})">
+                    <i class="bi bi-x-circle"></i> Cancelar pago
+                </button>`;
+            txList.appendChild(div);
+        });
     }
 
-    async function loadAll() {
+    // Cargar reservas activas al entrar
+    async function loadActive() {
         try {
-            const data = await fetch('/api/monitor/readings').then(r => r.json());
-            data.forEach(r => renderReading(r, false));
+            const data = await fetch('/api/payments/active').then(r => r.json());
+            data.forEach(t => txMap.set(t.id, t));
         } catch (e) {}
+        renderActive();
     }
 
+    // Stream en vivo (SSE): cada cambio (nuevo pago o cancelación) actualiza el mapa
     function connectStream() {
-        const source = new EventSource('/api/monitor/readings/stream');
+        const source = new EventSource('/api/payments/stream');
         source.onopen = () => { statusEl.className = 'status on'; statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
-        source.onmessage = (e) => renderReading(JSON.parse(e.data), true);
+        source.onmessage = (e) => {
+            const tx = JSON.parse(e.data);
+            txMap.set(tx.id, tx);
+            renderActive();
+        };
         source.onerror = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
     }
 
-    // BOTÓN: obtener todas las reservas (GET /api/bookings)
-    async function loadAllBookings() {
-        const btn = document.getElementById('bkBtn');
-        const list = document.getElementById('bkList');
-        btn.disabled = true; list.innerHTML = '<span class="small">Cargando…</span>';
+    // Cancelar el pago (cancela la reserva); el cambio vuelve por el stream
+    async function cancelPayment(id) {
         try {
-            const data = await fetch('/api/bookings').then(r => r.json());
-            if (!data.length) { list.innerHTML = '<span class="small">No hay reservas.</span>'; return; }
-            list.innerHTML = '';
-            data.forEach(b => {
-                const div = document.createElement('div');
-                div.className = 'bk-item';
-                div.innerHTML = `
-                    <div class="bk-top">
-                        <strong>#${b.id} · ${b.workspaceName}</strong>
-                        <span class="pill ${b.status}">${b.status}</span>
-                    </div>
-                    <div class="small">${b.memberFullName} · ${b.totalHours}h · $${b.totalPrice}</div>
-                    <div class="small">${fmt(b.startDatetime)} → ${fmt(b.endDatetime)}</div>`;
-                list.appendChild(div);
-            });
-        } catch (err) {
-            list.innerHTML = '<span class="small">Error al cargar las reservas.</span>';
-        } finally { btn.disabled = false; }
+            const res = await fetch(`/api/payments/${id}/cancel`, { method: 'POST' });
+            if (!res.ok) throw new Error('Error ' + res.status);
+            showAlert('Pago cancelado.', false);
+        } catch (err) { showAlert('No se pudo cancelar: ' + err.message, true); }
     }
 
+    // Promedio asíncrono (~3s)
     async function loadAverage() {
         const btn = document.getElementById('avgBtn');
         const out = document.getElementById('avgValue');
         btn.disabled = true; out.textContent = 'Calculando…';
-        try { out.textContent = (await fetch('/api/monitor/readings/average').then(r => r.json())).toFixed(2) + ' %'; }
+        try { out.textContent = '$' + (await fetch('/api/payments/average').then(r => r.json())).toFixed(2); }
         catch (err) { out.textContent = 'Error'; }
         finally { btn.disabled = false; }
     }
 
-    async function loadAverageByWs() {
-        const id = document.getElementById('avgWsId').value.trim();
-        const btn = document.getElementById('avgWsBtn');
-        const out = document.getElementById('avgWsValue');
-        if (!id) return showAlert('Escribe el nombre de una sala.', true);
-        btn.disabled = true; out.textContent = 'Calculando…';
-        try { out.textContent = (await fetch(`/api/monitor/readings/${encodeURIComponent(id)}/average`).then(r => r.json())).toFixed(2) + ' %'; }
-        catch (err) { out.textContent = 'Error'; }
-        finally { btn.disabled = false; }
-    }
-
+    // Prueba de NO BLOQUEO
     async function demoNonBlocking() {
         const btn = document.getElementById('demoBtn');
         const con = document.getElementById('console');
@@ -225,12 +183,12 @@
             const t = ((performance.now() - t0) / 1000).toFixed(2);
             con.innerHTML += `[t=${t}s] ${html}\n`; con.scrollTop = con.scrollHeight;
         };
-        log('<span class="wait">Lanzando GET /readings/average (tarda ~3s en segundo plano)...</span>');
-        const avgPromise = fetch('/api/monitor/readings/average').then(r => r.json())
-            .then(v => log(`<span class="ok">El promedio TERMINO: ${v.toFixed(2)}%</span>`));
-        log('Al mismo tiempo pido GET /readings ...');
-        const lst = await fetch('/api/monitor/readings').then(r => r.json());
-        log(`<span class="ok">/readings RESPONDIO AL INSTANTE con ${lst.length} lecturas (no espero al promedio)</span>`);
+        log('<span class="wait">Lanzando GET /average (tarda ~3s en segundo plano)...</span>');
+        const avgPromise = fetch('/api/payments/average').then(r => r.json())
+            .then(v => log(`<span class="ok">El promedio TERMINO: $${v.toFixed(2)}</span>`));
+        log('Al mismo tiempo pido GET /api/payments ...');
+        const lst = await fetch('/api/payments').then(r => r.json());
+        log(`<span class="ok">La lista RESPONDIO AL INSTANTE con ${lst.length} transacciones (no espero al promedio)</span>`);
         log('   El servidor no se bloqueo: atendio la lista mientras el promedio seguia en 2do plano.');
         await avgPromise; log('Demostracion finalizada.'); btn.disabled = false;
     }
@@ -242,7 +200,7 @@
         setTimeout(() => a.style.display = 'none', 2500);
     }
 
-    loadAll().then(connectStream);
+    loadActive().then(connectStream);
 </script>
 </body>
 </html>
