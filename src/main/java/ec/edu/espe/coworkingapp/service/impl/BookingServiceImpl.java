@@ -60,14 +60,16 @@ public class BookingServiceImpl implements BookingService {
 
 
 
-    public BookingServiceImpl(BookingRepository bookingRepository, MemberRepository memberRepository, WorkspaceRepository workspaceRepository) {
+    private final ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher occupancyPublisher;
 
+    public BookingServiceImpl(BookingRepository bookingRepository,
+                              MemberRepository memberRepository,
+                              WorkspaceRepository workspaceRepository,
+                              ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher occupancyPublisher) {
         this.bookingRepository = bookingRepository;
-
         this.memberRepository = memberRepository;
-
         this.workspaceRepository = workspaceRepository;
-
+        this.occupancyPublisher = occupancyPublisher;
     }
 
 
@@ -305,7 +307,9 @@ public class BookingServiceImpl implements BookingService {
 
         b.setStatus(BookingStatus.CONFIRMADA);
 
-        return toResponse(bookingRepository.save(b));
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
+        occupancyPublisher.publishForWorkspace(b.getWorkspace().getId()); // emite ocupación real
+        return res;
 
     }
 
