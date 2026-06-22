@@ -8,14 +8,14 @@ import ec.edu.espe.coworkingapp.repository.BookingRepository;
 import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.List;
+import java.time.LocalTime;
 
 /**
- * Puente entre el mundo MVC (reservas, JPA, base de datos) y el módulo reactivo.
- * Calcula la ocupación REAL de una sala a partir de sus reservas confirmadas en curso
- * y la emite al stream reactivo. Lo llama BookingServiceImpl cuando se confirma/cancela una reserva.
+ * Puente entre el flujo MVC (reservas, JPA) y el módulo reactivo.
+ * Calcula la ocupación REAL de una sala para un DÍA (reservas confirmadas de ese día ÷ capacidad)
+ * y la emite al stream. Lo llama BookingServiceImpl al confirmar, cancelar o eliminar una reserva.
  */
 @Component
 public class OccupancyPublisher {
@@ -33,36 +33,26 @@ public class OccupancyPublisher {
     }
 
     /**
-     * Calcula la ocupación real de UNA sala (reservas CONFIRMADAS en curso ahora ÷ capacidad)
-     * y la emite al stream. Devuelve la lectura emitida (o null si la sala no existe).
+     * Calcula la ocupación de una sala para un día concreto y la emite al stream.
+     * Ocupación = (reservas CONFIRMADAS de ese día ÷ capacidad) × 100.
      */
-    public WorkspaceReading publishForWorkspace(Long workspaceId) {
+    public WorkspaceReading publishForWorkspaceDay(Long workspaceId, LocalDate day) {
         Workspace ws = workspaceRepository.findById(workspaceId).orElse(null);
         if (ws == null) return null;
 
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("America/Guayaquil"));
+        LocalDateTime inicioDia = day.atStartOfDay();
+        LocalDateTime finDia = day.atTime(LocalTime.MAX);
 
-        int enCurso = bookingRepository
-                .findByWorkspaceIdAndStatusAndStartDatetimeLessThanEqualAndEndDatetimeGreaterThanEqual(
-                        workspaceId, BookingStatus.CONFIRMADA, now, now)
+        int reservasDelDia = bookingRepository
+                .findByWorkspaceIdAndStatusAndStartDatetimeBetween(
+                        workspaceId, BookingStatus.CONFIRMADA, inicioDia, finDia)
                 .size();
 
         double capacidad = (ws.getCapacity() != null && ws.getCapacity() > 0) ? ws.getCapacity() : 1;
-        double ocupacion = Math.min(100.0, (enCurso / capacidad) * 100.0);
+        double ocupacion = Math.min(100.0, (reservasDelDia / capacidad) * 100.0);
         ocupacion = Math.round(ocupacion * 100.0) / 100.0;
 
         // save() guarda en memoria y emite al stream reactivo (Sinks)
-        return readingRepository.save(new WorkspaceReading(ws.getName(), ocupacion, now));
-    }
-
-    /**
-     * Calcula y emite la ocupación de TODAS las salas. Se usa para tomar una "foto"
-     * del estado actual (por ejemplo al abrir el monitor por primera vez).
-     */
-    public List<WorkspaceReading> publishAll() {
-        return workspaceRepository.findAll().stream()
-                .map(ws -> publishForWorkspace(ws.getId()))
-                .filter(r -> r != null)
-                .toList();
+        return readingRepository.save(new WorkspaceReading(ws.getName(), ocupacion, day, LocalDateTime.now()));
     }
 }

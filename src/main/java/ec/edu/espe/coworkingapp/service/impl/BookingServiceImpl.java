@@ -1,260 +1,161 @@
 package ec.edu.espe.coworkingapp.service.impl;
 
-
-
 import ec.edu.espe.coworkingapp.domain.Booking;
-
 import ec.edu.espe.coworkingapp.domain.BookingStatus;
-
 import ec.edu.espe.coworkingapp.domain.Member;
-
 import ec.edu.espe.coworkingapp.domain.Workspace;
-
 import ec.edu.espe.coworkingapp.dto.request.BookingRequestDto;
-
 import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
-
+import ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher;
 import ec.edu.espe.coworkingapp.repository.BookingRepository;
-
 import ec.edu.espe.coworkingapp.repository.MemberRepository;
-
 import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
-
 import ec.edu.espe.coworkingapp.service.BookingService;
-
 import ec.edu.espe.coworkingapp.web.advice.BusinessConflictException;
-
 import ec.edu.espe.coworkingapp.web.advice.ResourceNotFoundException;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 import java.time.YearMonth;
-
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-
 import java.util.List;
-
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.Page;
-
-import org.springframework.data.domain.Pageable;
-
-
-
 @Service
-
 public class BookingServiceImpl implements BookingService {
 
-
-
     private final BookingRepository bookingRepository;
-
     private final MemberRepository memberRepository;
-
     private final WorkspaceRepository workspaceRepository;
-
-
-
-    private final ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher occupancyPublisher;
+    private final OccupancyPublisher occupancyPublisher;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               MemberRepository memberRepository,
                               WorkspaceRepository workspaceRepository,
-                              ec.edu.espe.coworkingapp.reactive.service.OccupancyPublisher occupancyPublisher) {
+                              OccupancyPublisher occupancyPublisher) {
         this.bookingRepository = bookingRepository;
         this.memberRepository = memberRepository;
         this.workspaceRepository = workspaceRepository;
         this.occupancyPublisher = occupancyPublisher;
     }
 
-
-
     @Override
-
     public BookingResponseDto create(BookingRequestDto dto) {
-
         Member m = memberRepository.findById(dto.getMemberId())
-
                 .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado"));
-
-        if (!m.getActive()) throw new BusinessConflictException("El miembro no estƒ activo");
-
-
+        if (!m.getActive()) throw new BusinessConflictException("El miembro no está activo");
 
         Workspace w = workspaceRepository.findById(dto.getWorkspaceId())
-
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace no encontrado"));
-
-        if (!w.getAvailable()) throw new BusinessConflictException("El workspace no estƒ disponible");
-
-
+        if (!w.getAvailable()) throw new BusinessConflictException("El workspace no está disponible");
 
         if (!dto.getEndDatetime().isAfter(dto.getStartDatetime())) {
-
             throw new BusinessConflictException("La fecha de fin debe ser posterior a la fecha de inicio");
-
         }
 
-        LocalDateTime nowEcuador = LocalDateTime.now(java.time.ZoneId.of("America/Guayaquil"));
+        LocalDateTime nowEcuador = LocalDateTime.now(ZoneId.of("America/Guayaquil"));
         if (dto.getStartDatetime().isBefore(nowEcuador.minusMinutes(15))) {
             throw new BusinessConflictException("No se puede crear una reserva en el pasado");
         }
 
-
-
         double totalHours = ChronoUnit.MINUTES.between(dto.getStartDatetime(), dto.getEndDatetime()) / 60.0;
-
         totalHours = Math.round(totalHours * 100.0) / 100.0;
 
-
-
         if (totalHours < 0.5) {
-
-            throw new BusinessConflictException("La duraciÃ³n mÃ­nima de una reserva es 30 minutos");
-
+            throw new BusinessConflictException("La duración mínima de una reserva es 30 minutos");
         }
 
-
-
-        boolean overlap = bookingRepository.findByWorkspaceIdAndStatusIn(w.getId(), List.of(BookingStatus.PENDIENTE, BookingStatus.CONFIRMADA))
-
-                .stream().anyMatch(b -> b.getStartDatetime().isBefore(dto.getEndDatetime()) && b.getEndDatetime().isAfter(dto.getStartDatetime()));
-
-
+        boolean overlap = bookingRepository
+                .findByWorkspaceIdAndStatusIn(w.getId(), List.of(BookingStatus.PENDIENTE, BookingStatus.CONFIRMADA))
+                .stream()
+                .anyMatch(b -> b.getStartDatetime().isBefore(dto.getEndDatetime())
+                        && b.getEndDatetime().isAfter(dto.getStartDatetime()));
 
         if (overlap) {
-
             throw new BusinessConflictException("El workspace ya tiene una reserva en ese horario");
-
         }
-
-
 
         YearMonth cm = YearMonth.now();
-
         double used = bookingRepository.findByMemberIdAndStatusNotAndStartDatetimeBetween(
-
-                m.getId(), BookingStatus.CANCELADA, cm.atDay(1).atStartOfDay(), cm.atEndOfMonth().atTime(23,59,59)
-
-        ).stream().mapToDouble(b -> b.getTotalHours()).sum();
-
-
+                m.getId(), BookingStatus.CANCELADA,
+                cm.atDay(1).atStartOfDay(), cm.atEndOfMonth().atTime(23, 59, 59)
+        ).stream().mapToDouble(Booking::getTotalHours).sum();
 
         if (used + totalHours > m.getMonthlyHoursQuota()) {
-
             throw new BusinessConflictException("El miembro no tiene suficiente cupo mensual disponible");
-
         }
 
-
-
         Booking b = new Booking();
-
         b.setMember(m);
-
         b.setWorkspace(w);
-
         b.setStartDatetime(dto.getStartDatetime());
-
         b.setEndDatetime(dto.getEndDatetime());
-
         b.setStatus(BookingStatus.PENDIENTE);
-
         b.setTotalHours(totalHours);
-
         b.setCreatedAt(LocalDateTime.now());
 
-
-
         return toResponse(bookingRepository.save(b));
-
     }
 
-
-
     @Override
-
     public BookingResponseDto findById(Long id) {
-
-        Booking b = bookingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
-
+        Booking b = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
         return toResponse(b);
-
     }
 
-
-
     @Override
-
     public List<BookingResponseDto> findAll() {
-
         return bookingRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
-
     }
 
-
-
     @Override
-
     public List<BookingResponseDto> findByMember(Long memberId) {
-
         return bookingRepository.findByMemberId(memberId).stream().map(this::toResponse).collect(Collectors.toList());
-
     }
 
-
-
     @Override
-
     public List<BookingResponseDto> findByWorkspace(Long workspaceId) {
-
         return bookingRepository.findByWorkspaceId(workspaceId).stream().map(this::toResponse).collect(Collectors.toList());
-
     }
-
-
 
     @Override
-
     public List<BookingResponseDto> findByStatus(BookingStatus status) {
-
         return bookingRepository.findByStatus(status).stream().map(this::toResponse).collect(Collectors.toList());
-
     }
-
-
 
     @Override
     public Page<BookingResponseDto> searchPage(Long id, Pageable pageable) {
-        Page<Booking> bookings = (id != null) 
-            ? bookingRepository.findById(id, pageable)
-            : bookingRepository.findAll(pageable);
+        Page<Booking> bookings = (id != null)
+                ? bookingRepository.findById(id, pageable)
+                : bookingRepository.findAll(pageable);
         return bookings.map(this::toResponse);
     }
+
     @Override
     public BookingResponseDto update(Long id, BookingRequestDto dto) {
-        Booking b = bookingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+        Booking b = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
 
         Member m = memberRepository.findById(dto.getMemberId())
                 .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado"));
         if (!m.getId().equals(b.getMember().getId()) && !m.getActive())
-                throw new BusinessConflictException("El miembro no estƒ activo");
+            throw new BusinessConflictException("El miembro no está activo");
 
         Workspace w = workspaceRepository.findById(dto.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace no encontrado"));
         if (!w.getId().equals(b.getWorkspace().getId()) && !w.getAvailable())
-                throw new BusinessConflictException("El workspace no estƒ disponible");
+            throw new BusinessConflictException("El workspace no está disponible");
 
         if (!dto.getEndDatetime().isAfter(dto.getStartDatetime())) {
             throw new BusinessConflictException("La fecha de fin debe ser posterior a la fecha de inicio");
         }
 
-        LocalDateTime nowEcuador = LocalDateTime.now(java.time.ZoneId.of("America/Guayaquil"));
+        LocalDateTime nowEcuador = LocalDateTime.now(ZoneId.of("America/Guayaquil"));
         if (dto.getStartDatetime().isBefore(nowEcuador.minusMinutes(15))) {
             throw new BusinessConflictException("No se puede crear una reserva en el pasado");
         }
@@ -264,15 +165,20 @@ public class BookingServiceImpl implements BookingService {
 
         if (totalHours < 0.5) throw new BusinessConflictException("La duración mínima de una reserva es 30 minutos");
 
-        boolean overlap = bookingRepository.findByWorkspaceIdAndStatusIn(w.getId(), List.of(BookingStatus.PENDIENTE, BookingStatus.CONFIRMADA))
-                .stream().anyMatch(ob -> !ob.getId().equals(id) && ob.getStartDatetime().isBefore(dto.getEndDatetime()) && ob.getEndDatetime().isAfter(dto.getStartDatetime()));
+        boolean overlap = bookingRepository
+                .findByWorkspaceIdAndStatusIn(w.getId(), List.of(BookingStatus.PENDIENTE, BookingStatus.CONFIRMADA))
+                .stream()
+                .anyMatch(ob -> !ob.getId().equals(id)
+                        && ob.getStartDatetime().isBefore(dto.getEndDatetime())
+                        && ob.getEndDatetime().isAfter(dto.getStartDatetime()));
 
         if (overlap) throw new BusinessConflictException("El workspace ya tiene una reserva en ese horario");
 
         YearMonth cm = YearMonth.now();
         double used = bookingRepository.findByMemberIdAndStatusNotAndStartDatetimeBetween(
-                m.getId(), BookingStatus.CANCELADA, cm.atDay(1).atStartOfDay(), cm.atEndOfMonth().atTime(23,59,59)
-        ).stream().filter(ob -> !ob.getId().equals(id)).mapToDouble(ob -> ob.getTotalHours()).sum();
+                m.getId(), BookingStatus.CANCELADA,
+                cm.atDay(1).atStartOfDay(), cm.atEndOfMonth().atTime(23, 59, 59)
+        ).stream().filter(ob -> !ob.getId().equals(id)).mapToDouble(Booking::getTotalHours).sum();
 
         if (used + totalHours > m.getMonthlyHoursQuota()) {
             throw new BusinessConflictException("El total de horas excede el cupo mensual del miembro");
@@ -286,89 +192,72 @@ public class BookingServiceImpl implements BookingService {
 
         return toResponse(bookingRepository.save(b));
     }
+
     @Override
     public void delete(Long id) {
-        bookingRepository.deleteById(id);
+        Booking b = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+
+        // Capturamos sala y día ANTES de borrar
+        Long workspaceId = b.getWorkspace().getId();
+        LocalDate day = b.getStartDatetime().toLocalDate();
+
+        bookingRepository.delete(b);
+
+        // Recalculamos el aforo de ese día YA sin esta reserva -> baja al instante
+        occupancyPublisher.publishForWorkspaceDay(workspaceId, day);
     }
 
     public BookingResponseDto confirm(Long id) {
-
-        Booking b = bookingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
-
-        if (b.getStatus() == BookingStatus.CONFIRMADA) throw new BusinessConflictException("La reserva ya estÃ¡ confirmada");
-
-        if (b.getStatus() == BookingStatus.CANCELADA) throw new BusinessConflictException("No se puede confirmar una reserva cancelada");
-
-        
-
-        if (!b.getWorkspace().getAvailable()) throw new BusinessConflictException("El workspace ya no estÃ¡ disponible");
-
-
+        Booking b = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (b.getStatus() == BookingStatus.CONFIRMADA)
+            throw new BusinessConflictException("La reserva ya está confirmada");
+        if (b.getStatus() == BookingStatus.CANCELADA)
+            throw new BusinessConflictException("No se puede confirmar una reserva cancelada");
+        if (!b.getWorkspace().getAvailable())
+            throw new BusinessConflictException("El workspace ya no está disponible");
 
         b.setStatus(BookingStatus.CONFIRMADA);
-
         BookingResponseDto res = toResponse(bookingRepository.save(b));
-        occupancyPublisher.publishForWorkspace(b.getWorkspace().getId()); // emite ocupación real
+
+        // El aforo del día sube al confirmar
+        occupancyPublisher.publishForWorkspaceDay(b.getWorkspace().getId(), b.getStartDatetime().toLocalDate());
         return res;
-
     }
-
-
 
     @Override
-
     public BookingResponseDto cancel(Long id) {
-
-        Booking b = bookingRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
-
-        if (b.getStatus() == BookingStatus.CANCELADA) throw new BusinessConflictException("La reserva ya estÃ¡ cancelada");
-
-
+        Booking b = bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Reserva no encontrada"));
+        if (b.getStatus() == BookingStatus.CANCELADA)
+            throw new BusinessConflictException("La reserva ya está cancelada");
 
         b.setStatus(BookingStatus.CANCELADA);
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
 
-        return toResponse(bookingRepository.save(b));
-
+        // El aforo del día baja al cancelar
+        occupancyPublisher.publishForWorkspaceDay(b.getWorkspace().getId(), b.getStartDatetime().toLocalDate());
+        return res;
     }
-
-
 
     private BookingResponseDto toResponse(Booking b) {
-
         BookingResponseDto res = new BookingResponseDto();
-
         res.setId(b.getId());
-
         res.setMemberId(b.getMember().getId());
-
         res.setMemberFullName(b.getMember().getFullName());
-
         res.setWorkspaceId(b.getWorkspace().getId());
-
         res.setWorkspaceName(b.getWorkspace().getName());
-
         res.setWorkspaceType(b.getWorkspace().getType());
-
         res.setStartDatetime(b.getStartDatetime());
-
         res.setEndDatetime(b.getEndDatetime());
-
         res.setTotalHours(b.getTotalHours());
 
-        
-
         double price = b.getTotalHours() * b.getWorkspace().getPricePerHour();
-
         res.setTotalPrice(Math.round(price * 100.0) / 100.0);
 
-        
-
         res.setStatus(b.getStatus());
-
         res.setCreatedAt(b.getCreatedAt());
-
         return res;
-
     }
-
 }

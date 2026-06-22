@@ -41,7 +41,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findById(Long id, Pageable pageable);
     Page<Booking> findAll(Pageable pageable);
 
-    List<Booking> findByWorkspaceIdAndStatusAndStartDatetimeLessThanEqualAndEndDatetimeGreaterThanEqual(
-            Long workspaceId, BookingStatus status, LocalDateTime instant1, LocalDateTime instant2);
+    java.util.List<Booking> findByWorkspaceIdAndStatusAndStartDatetimeBetween(
+            Long workspaceId, BookingStatus status, LocalDateTime inicioDia, LocalDateTime finDia);
 }
 
