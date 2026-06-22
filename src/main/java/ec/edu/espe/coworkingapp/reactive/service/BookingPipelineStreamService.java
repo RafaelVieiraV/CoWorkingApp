@@ -34,7 +34,7 @@ public class BookingPipelineStreamService {
         Sinks.Many<String> eventos = Sinks.many().unicast().onBackpressureBuffer();
 
         if (reservasReales.isEmpty()) {
-            return Flux.just("[info] No hay reservas en la base de datos. Crea reservas antes de ejecutar el pipeline.");
+            return Flux.just("[info] No hay reservas. Crea reservas antes de ejecutar el pipeline.");
         }
 
         AtomicInteger ultimaPosicionEvaluada = new AtomicInteger(-1);
@@ -42,7 +42,7 @@ public class BookingPipelineStreamService {
 
         // emitir onSubscribe de inmediato
         eventos.tryEmitNext("[onSubscribe] Pipeline iniciado. " + reservasReales.size()
-                + " reserva(s) real(es) encontrada(s) en la BD. Solicitando lote de " + TAMANO_LOTE + "...");
+                + " reserva(s). Solicitando lote de " + TAMANO_LOTE + "...");
 
         Flux<BookingResponseDto> flujoPrincipal = Flux.fromIterable(reservasReales)
                 .index()
