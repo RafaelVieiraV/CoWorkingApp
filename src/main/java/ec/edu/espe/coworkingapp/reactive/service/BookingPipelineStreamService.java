@@ -10,19 +10,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Corre el pipeline reactivo de verificación de reservas (las mismas etapas
- * que BookingPipelineService del paquete pubsub) y en vez de bloquearse
- * esperando el resultado, emite cada evento interno del flujo —
- * onSubscribe, onNext, backpressure, onError/onErrorResume, onComplete —
- * como mensajes SSE en tiempo real hacia el frontend.
- *
- * Así la página del monitor muestra la consola del pipeline en vivo,
- * sin bloquear el hilo HTTP.
- *
- * La condición de anomalía es real: una reserva con totalHours > 12 se
- * considera fuera de lo normal. No hay botón ni parámetro para forzarlo.
- */
 @Service
 public class BookingPipelineStreamService {
 
@@ -36,15 +23,7 @@ public class BookingPipelineStreamService {
     }
 
     /**
-     * Devuelve un Flux<String> que emite los eventos del pipeline en tiempo
-     * real. Cada string es una línea de log del tipo:
-     *   [onSubscribe] ...
-     *   [onNext] ...
-     *   [backpressure] ...
-     *   [onError] ...
-     *   [onErrorResume] ...
-     *   [onComplete] ...
-     *
+     * Devuelve un Flux<String> que emite los eventos del pipeline en tiempo real
      * Este Flux se sirve directamente como SSE por PaymentController.
      */
     public Flux<String> ejecutarYEmitirEventos() {
@@ -87,7 +66,7 @@ public class BookingPipelineStreamService {
                             + " | " + reserva.getMemberFullName()
                             + " | " + reserva.getWorkspaceName()
                             + " | " + reserva.getTotalHours() + "h"
-                            + " | $" + reserva.getTotalPrice());
+                            + " | $" + String.format("%.2f", reserva.getTotalPrice()));
 
                     if (loteActual % TAMANO_LOTE == 0) {
                         eventos.tryEmitNext("[backpressure] Lote de " + TAMANO_LOTE
@@ -116,7 +95,7 @@ public class BookingPipelineStreamService {
                                         + " | " + r.getMemberFullName()
                                         + " | " + r.getWorkspaceName()
                                         + " | " + r.getTotalHours() + "h"
-                                        + " | $" + r.getTotalPrice());
+                                        + " | $" + String.format("%.2f", r.getTotalPrice()));
                                 if (lote % TAMANO_LOTE == 0) {
                                     eventos.tryEmitNext("[backpressure] Lote de " + TAMANO_LOTE
                                             + " completado. Solicitando " + TAMANO_LOTE + " más...");
