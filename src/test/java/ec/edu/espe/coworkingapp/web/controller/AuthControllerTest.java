@@ -4,6 +4,7 @@ import ec.edu.espe.coworkingapp.dto.request.AdminRequestDto;
 import ec.edu.espe.coworkingapp.security.JwtUtil;
 import ec.edu.espe.coworkingapp.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ec.edu.espe.coworkingapp.web.AuthController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

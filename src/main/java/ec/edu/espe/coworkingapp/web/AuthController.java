@@ -1,4 +1,4 @@
-package ec.edu.espe.coworkingapp.web.controller;
+package ec.edu.espe.coworkingapp.web;
 
 import ec.edu.espe.coworkingapp.dto.request.AdminRequestDto;
 import ec.edu.espe.coworkingapp.service.AuthService;
