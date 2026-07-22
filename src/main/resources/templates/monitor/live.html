@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/head :: head}"/>
+    <link th:href="@{/css/app.css}" rel="stylesheet"/>
+    <title>Transacciones en Vivo - CoWorking App</title>
+    <style>
+        /* ── Layout ── */
+        .monitor-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.5rem; align-items: start; }
+        .monitor-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; }
+        .monitor-card h3 { margin:0 0 .35rem; font-size:1rem; font-weight:600; }
+        .monitor-card .hint { color:#9ca3af; font-size:.78rem; margin:0 0 1rem; }
+
+        /* ── Estado conexión ── */
+        .status { display:inline-flex; align-items:center; gap:.4rem; font-size:.8rem; padding:.25rem .6rem; border-radius:999px; }
+        .status.on  { background:#dcfce7; color:#166534; }
+        .status.off { background:#fee2e2; color:#991b1b; }
+        .dot { width:8px; height:8px; border-radius:50%; background:currentColor; animation:pulse 1.2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+        /* ── Tarjetas de reservas activas ── */
+        .tx-list { max-height:520px; overflow-y:auto; display:flex; flex-direction:column; gap:.6rem; }
+        .tx-item { border:1px solid #e5e7eb; background:#f9fafb; border-radius:8px; padding:.7rem .85rem; animation:slideIn .3s ease; }
+        .tx-item.pagado   { border-left:4px solid #16a34a; }
+        .tx-item.pendiente{ border-left:4px solid #d97706; }
+        @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+        .tx-top { display:flex; justify-content:space-between; align-items:center; }
+        .tx-amount { font-weight:700; color:#111827; font-size:1.05rem; }
+        .tx-sub { color:#6b7280; font-size:.8rem; margin:.15rem 0 .55rem; }
+        .pill { font-size:.68rem; padding:.12rem .55rem; border-radius:999px; font-weight:700; }
+        .pill.PAGADO   { background:#dcfce7; color:#166534; }
+        .pill.PENDIENTE{ background:#fef9c3; color:#854d0e; }
+        .actions { display:flex; gap:.5rem; }
+        .btn-pay    { background:#dcfce7; color:#166534; border:none; border-radius:8px; padding:.35rem .7rem; font-size:.8rem; font-weight:600; cursor:pointer; }
+        .btn-pay:hover { background:#bbf7d0; }
+        .btn-pay:disabled { opacity:.5; cursor:default; }
+        .btn-cancel { background:#fee2e2; color:#991b1b; border:none; border-radius:8px; padding:.35rem .7rem; font-size:.8rem; font-weight:600; cursor:pointer; }
+        .btn-cancel:hover { background:#fecaca; }
+        .summary { display:flex; gap:1.5rem; margin-bottom:.85rem; }
+        .summary div b { display:block; font-size:1.3rem; color:#111827; }
+        .small { font-size:.78rem; color:#6b7280; }
+
+        /* ── Promedio ── */
+        .big-value { font-size:1.8rem; font-weight:700; color:#4f46e5; margin:.25rem 0 .75rem; }
+
+        /* ── Pipeline: cabecera y botón ── */
+        .pipeline-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.25rem; }
+        .pipeline-badge { display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem;
+            padding:.2rem .55rem; border-radius:999px; font-weight:600; margin-left:.5rem; }
+        .pipeline-badge.idle    { background:#f1f5f9; color:#64748b; }
+        .pipeline-badge.running { background:#fef9c3; color:#854d0e; }
+        .pipeline-badge.done    { background:#dcfce7; color:#166534; }
+        .pipeline-badge.error   { background:#fee2e2; color:#991b1b; }
+        .btn-pipeline { background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe;
+            border-radius:8px; padding:.35rem .75rem; font-size:.8rem; font-weight:600; cursor:pointer; }
+        .btn-pipeline:hover { background:#e0e7ff; }
+        .btn-pipeline:disabled { opacity:.5; cursor:default; }
+
+        /* ── Stats del pipeline ── */
+        .pipeline-stats { display:flex; gap:1.2rem; margin:.6rem 0 .75rem; }
+        .pipeline-stats span { font-size:.78rem; color:#6b7280; }
+        .pipeline-stats b { color:#111827; }
+        .pipeline-stats .stat-error b { color:#dc2626; }
+
+        /* ── Lista de tarjetas del pipeline ── */
+        .pipeline-list { max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:.5rem; }
+
+        /* Tarjeta de SUSCRIPCIÓN (onSubscribe) */
+        .pl-card { border-radius:8px; padding:.65rem .85rem; border:1px solid transparent; animation:slideIn .25s ease; }
+        .pl-card.ev-subscribe {
+            background:#eef2ff; border-color:#c7d2fe; border-left:4px solid #6366f1;
+        }
+        /* Tarjeta de reserva normal (onNext) */
+        .pl-card.ev-next {
+            background:#f0fdf4; border-color:#bbf7d0; border-left:4px solid #16a34a;
+        }
+        /* Tarjeta de backpressure */
+        .pl-card.ev-backpressure {
+            background:#fffbeb; border-color:#fde68a; border-left:4px solid #f59e0b;
+        }
+        /* Tarjeta de error (reserva erronea detectada) */
+        .pl-card.ev-error {
+            background:#fef2f2; border-color:#fecaca; border-left:4px solid #dc2626;
+        }
+        /* Tarjeta de recuperación (onErrorResume) */
+        .pl-card.ev-resume {
+            background:#fff7ed; border-color:#fed7aa; border-left:4px solid #ea580c;
+        }
+        /* Tarjeta de reserva recuperada (onNext tras resume) */
+        .pl-card.ev-next-recovered {
+            background:#fefce8; border-color:#fde047; border-left:4px solid #ca8a04;
+        }
+        /* Tarjeta de fin (onComplete) */
+        .pl-card.ev-complete {
+            background:#f0fdf4; border-color:#86efac; border-left:4px solid #15803d;
+        }
+
+        .pl-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:.2rem; }
+        .pl-card-title { font-size:.82rem; font-weight:700; color:#111827; display:flex; align-items:center; gap:.4rem; }
+        .pl-card-tag { font-size:.65rem; padding:.1rem .45rem; border-radius:999px; font-weight:700; }
+        .tag-subscribe  { background:#c7d2fe; color:#3730a3; }
+        .tag-ok         { background:#bbf7d0; color:#166534; }
+        .tag-bp         { background:#fde68a; color:#92400e; }
+        .tag-error      { background:#fecaca; color:#991b1b; }
+        .tag-resume     { background:#fed7aa; color:#9a3412; }
+        .tag-recovered  { background:#fef08a; color:#713f12; }
+        .tag-complete   { background:#86efac; color:#14532d; }
+
+        .pl-card-sub  { font-size:.77rem; color:#374151; margin:.1rem 0; }
+        .pl-card-meta { font-size:.72rem; color:#9ca3af; margin-top:.25rem; }
+
+        /* Placeholder vacío */
+        .pipeline-empty { text-align:center; padding:2rem 1rem; color:#9ca3af; font-size:.82rem; }
+        .pipeline-empty .icon { font-size:2rem; margin-bottom:.5rem; }
+    </style>
+</head>
+<body>
+
+<div class="app-layout">
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+    <main class="main-content">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Transacciones en Vivo</h1>
+                <p class="page-subtitle">Pagos de las reservas confirmadas en tiempo real (WebFlux · SSE)</p>
+            </div>
+            <span id="connStatus" class="status off"><span class="dot"></span> Desconectado</span>
+        </div>
+
+        <div id="pageAlert" class="page-alert" style="display:none;"></div>
+
+        <div class="monitor-grid">
+
+            <!-- ===== Columna izquierda ===== -->
+            <div>
+
+                <!-- Promedio-->
+                <div class="monitor-card">
+                    <h3>Promedio de pagos</h3>
+                    <p class="hint">GET /api/payments/average — asíncrono (~3s) con delayElement, no bloqueante.</p>
+                    <div class="big-value" id="avgValue">—</div>
+                    <button class="btn-secondary" onclick="loadAverage()" id="avgBtn">
+                        <i class="bi bi-calculator"></i> Calcular promedio
+                    </button>
+                </div>
+
+                <!-- ── Pipeline de verificación── -->
+                <div class="monitor-card">
+                    <div class="pipeline-header">
+                        <h3 style="margin:0;">
+                            Verificación de reservas
+                            <span id="pipelineBadge" class="pipeline-badge idle">En espera</span>
+                        </h3>
+                        <button class="btn-pipeline" id="pipelineBtn" onclick="runPipeline()">
+                            <i class="bi bi-play-circle"></i> Ejecutar
+                        </button>
+                    </div>
+                    <p class="hint" style="margin-bottom:.4rem;">
+                        Corre el pipeline reactivo (Publisher → filter → map → delayElements → backpressure → onError → onErrorResume → onComplete)
+                        sobre <strong>todas las reservas</strong>.
+                        Reservas &gt; 12h son detectadas como erroneas y el flujo se recupera automaticamente.
+                    </p>
+
+                    <div class="pipeline-stats">
+                        <span>Evaluadas: <b id="statTotal">0</b></span>
+                        <span>Procesadas: <b id="statOk">0</b></span>
+                        <span class="stat-error">Erroneas: <b id="statErrors">0</b></span>
+                        <span>Recuperadas: <b id="statRecovered">0</b></span>
+                    </div>
+
+                    <div class="pipeline-list" id="pipelineList">
+                        <div class="pipeline-empty">
+                            <div class="icon">⚡</div>
+                            <strong>Ejecutar</strong> para iniciar la verificación
+                            sobre las reservas.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ===== Columna derecha: reservas activas===== -->
+            <div class="monitor-card">
+                <h3>Reservas activas</h3>
+                <p class="hint">Se cargan al entrar (GET /active) y se actualizan solas por el stream (SSE).</p>
+                <div class="summary">
+                    <div class="small">Activas <b id="countActive">0</b></div>
+                    <div class="small">Pagadas <b id="countPaid">0</b></div>
+                    <div class="small">Total $ <b id="sumActive">0.00</b></div>
+                </div>
+                <div class="tx-list" id="txList">
+                    <span class="small" id="txEmpty">Cargando…</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ── Estado de pagos ──────────────────
+    const statusEl = document.getElementById('connStatus');
+    const txList   = document.getElementById('txList');
+    const map      = new Map();
+
+    function render() {
+        const items = [...map.values()]
+            .filter(t => t.paymentStatus !== 'CANCELADA')
+            .sort((a, b) => b.bookingId - a.bookingId);
+
+        document.getElementById('countActive').textContent = items.length;
+        document.getElementById('countPaid').textContent   = items.filter(t => t.paymentStatus === 'PAGADO').length;
+        document.getElementById('sumActive').textContent   =
+            items.reduce((s, t) => s + (t.amount || 0), 0).toFixed(2);
+
+        txList.innerHTML = '';
+        if (!items.length) {
+            txList.innerHTML = '<span class="small">No hay reservas activas. Confirma una reserva en la sección Reservas.</span>';
+            return;
+        }
+        items.forEach(t => {
+            const pagado = t.paymentStatus === 'PAGADO';
+            const div = document.createElement('div');
+            div.className = 'tx-item ' + (pagado ? 'pagado' : 'pendiente');
+            div.innerHTML = `
+                <div class="tx-top">
+                    <strong>${t.workspaceName ?? '—'}</strong>
+                    <span class="tx-amount">$${(t.amount ?? 0).toFixed(2)}
+                        <span class="pill ${t.paymentStatus}">${t.paymentStatus}</span></span>
+                </div>
+                <div class="tx-sub">${t.memberName ?? '—'} · reserva #${t.bookingId}</div>
+                <div class="actions">
+                    <button class="btn-pay" onclick="pay(${t.bookingId})" ${pagado ? 'disabled' : ''}>
+                        <i class="bi bi-cash-coin"></i> ${pagado ? 'Pagado' : 'Marcar pagado'}
+                    </button>
+                    <button class="btn-cancel" onclick="cancelBooking(${t.bookingId})">
+                        <i class="bi bi-x-circle"></i> Cancelar reserva
+                    </button>
+                </div>`;
+            txList.appendChild(div);
+        });
+    }
+
+    async function loadActive() {
+        try {
+            const data = await fetch('/api/payments/active').then(r => r.json());
+            data.forEach(t => map.set(t.bookingId, t));
+        } catch(e) {}
+        render();
+    }
+
+    function connectStream() {
+        const source = new EventSource('/api/payments/stream');
+        source.onopen    = () => { statusEl.className = 'status on';  statusEl.innerHTML = '<span class="dot"></span> Conectado'; };
+        source.onmessage = (e) => {
+            const t = JSON.parse(e.data);
+            if (t.paymentStatus === 'CANCELADA') map.delete(t.bookingId);
+            else map.set(t.bookingId, t);
+            render();
+        };
+        source.onerror   = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
+    }
+
+    async function pay(bookingId) {
+        try {
+            const res = await fetch(`/api/payments/${bookingId}/pay`, { method: 'POST' });
+            if (!res.ok) throw new Error('Error ' + res.status);
+            showAlert('Pago registrado.', false);
+        } catch(err) { showAlert('No se pudo pagar: ' + err.message, true); }
+    }
+
+    async function cancelBooking(bookingId) {
+        try {
+            const res = await fetch(`/api/payments/${bookingId}/cancel`, { method: 'POST' });
+            if (!res.ok) throw new Error('Error ' + res.status);
+            showAlert('Reserva cancelada.', false);
+        } catch(err) { showAlert('No se pudo cancelar: ' + err.message, true); }
+    }
+
+    async function loadAverage() {
+        const btn = document.getElementById('avgBtn');
+        const out = document.getElementById('avgValue');
+        btn.disabled = true; out.textContent = 'Calculando…';
+        try { out.textContent = '$' + (await fetch('/api/payments/average').then(r => r.json())).toFixed(2); }
+        catch(err) { out.textContent = 'Error'; }
+        finally { btn.disabled = false; }
+    }
+
+    // ── Pipeline reactivo: renderiza tarjetas visuales ───────────────────────
+    let pipelineSource = null;
+    let statOk = 0, statErrors = 0, statRecovered = 0, statTotal = 0;
+    let inRecovery = false; // true luego de onErrorResume, para colorear onNext diferente
+
+    function resetPipelineStats() {
+        statOk = statErrors = statRecovered = statTotal = 0;
+        inRecovery = false;
+        document.getElementById('statOk').textContent        = '0';
+        document.getElementById('statErrors').textContent    = '0';
+        document.getElementById('statRecovered').textContent = '0';
+        document.getElementById('statTotal').textContent     = '0';
+    }
+
+    function addCard(type, title, tag, tagClass, sub, meta) {
+        const list = document.getElementById('pipelineList');
+        // Limpia el placeholder si es la primera tarjeta
+        if (list.querySelector('.pipeline-empty')) list.innerHTML = '';
+
+        const card = document.createElement('div');
+        card.className = 'pl-card ' + type;
+        card.innerHTML = `
+            <div class="pl-card-top">
+                <span class="pl-card-title">${title}</span>
+                <span class="pl-card-tag ${tagClass}">${tag}</span>
+            </div>
+            ${sub  ? `<div class="pl-card-sub">${sub}</div>`   : ''}
+            ${meta ? `<div class="pl-card-meta">${meta}</div>` : ''}`;
+        list.appendChild(card);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function runPipeline() {
+        if (pipelineSource) { pipelineSource.close(); pipelineSource = null; }
+
+        const list   = document.getElementById('pipelineList');
+        const btn    = document.getElementById('pipelineBtn');
+        const badge  = document.getElementById('pipelineBadge');
+
+        // Limpiar y reiniciar
+        list.innerHTML = '';
+        resetPipelineStats();
+        btn.disabled = true;
+        badge.className   = 'pipeline-badge running';
+        badge.textContent = '⟳ Ejecutando…';
+
+        pipelineSource = new EventSource('/api/payments/pipeline-stream');
+
+        pipelineSource.onmessage = (e) => {
+            const msg = e.data;
+
+            // ── onSubscribe ─────────────────────────────────────────────────
+            if (msg.startsWith('[onSubscribe]')) {
+                const texto = msg.replace('[onSubscribe] ', '');
+                addCard('ev-subscribe',
+                    'Suscripción iniciada', 'onSubscribe', 'tag-subscribe',
+                    texto, null);
+
+                // ── onNext normal ───────────────────────────────────────────────
+            } else if (msg.startsWith('[onNext]') && !inRecovery) {
+                statOk++; statTotal++;
+                document.getElementById('statOk').textContent    = statOk;
+                document.getElementById('statTotal').textContent = statTotal;
+
+                const partes  = parsearOnNext(msg);
+                addCard('ev-next',
+                    'Reserva verificada', 'onNext', 'tag-ok',
+                    `<strong>${partes.nombre}</strong> — ${partes.workspace}`,
+                    `Reserva #${partes.id} · ${partes.horas}h · ${partes.precio}`);
+
+                // ── onNext recuperado (tras onErrorResume) ──────────────────────
+            } else if (msg.startsWith('[onNext]') && inRecovery) {
+                statRecovered++; statTotal++;
+                document.getElementById('statRecovered').textContent = statRecovered;
+                document.getElementById('statTotal').textContent     = statTotal;
+
+                const partes = parsearOnNext(msg);
+                addCard('ev-next-recovered',
+                    'Reserva recuperada', 'onNext (recuperado)', 'tag-recovered',
+                    `<strong>${partes.nombre}</strong> — ${partes.workspace}`,
+                    `Reserva #${partes.id} · ${partes.horas}h · ${partes.precio}`);
+
+                // ── backpressure ────────────────────────────────────────────────
+            } else if (msg.startsWith('[backpressure]')) {
+                const texto = msg.replace('[backpressure] ', '');
+                addCard('ev-backpressure',
+                    '⏸ Backpressure', 'request(2)', 'tag-bp',
+                    texto, 'El subscriber pidió el siguiente lote de 2 reservas.');
+
+                // ── onError ─────────────────────────
+            } else if (msg.startsWith('[onError]')) {
+                statErrors++;
+                document.getElementById('statErrors').textContent = statErrors;
+                badge.className   = 'pipeline-badge error';
+                badge.textContent = 'Error detectado';
+
+                const detalle = msg.replace('[onError] ', '');
+                addCard('ev-error',
+                    'Reserva incorrecta detectada', 'onError', 'tag-error',
+                    detalle,
+                    'El flujo falla aquí. onErrorResume lo recuperará con las reservas reales restantes.');
+
+                // ── onErrorResume ───────────────────────────────────────────────
+            } else if (msg.startsWith('[onErrorResume]')) {
+                inRecovery = true;
+                badge.className   = 'pipeline-badge running';
+                badge.textContent = 'Recuperando…';
+
+                const detalle = msg.replace('[onErrorResume] ', '');
+                addCard('ev-resume',
+                    'Recuperación activada', 'onErrorResume', 'tag-resume',
+                    detalle,
+                    'El flujo continúa con las reservas que faltaban');
+
+                // ── onComplete ──────────────────────────────────────────────────
+            } else if (msg.startsWith('[onComplete]')) {
+                const texto = msg.replace('[onComplete] ', '');
+                addCard('ev-complete',
+                    'Flujo completado', 'onComplete', 'tag-complete',
+                    texto,
+                    `Total evaluadas: ${statTotal} · Anómalas: ${statErrors} · Recuperadas: ${statRecovered}`);
+
+                pipelineSource.close();
+                pipelineSource = null;
+                btn.disabled = false;
+                badge.className   = 'pipeline-badge done';
+                badge.textContent = 'Completado';
+                inRecovery = false;
+            }
+        };
+
+        pipelineSource.onerror = () => {
+            if (pipelineSource) {
+                pipelineSource.close();
+                pipelineSource = null;
+                btn.disabled = false;
+                badge.className   = 'pipeline-badge idle';
+                badge.textContent = 'En espera';
+            }
+        };
+    }
+
+    /**
+     * Extrae los campos del mensaje [onNext] que emite BookingPipelineStreamService
+     */
+    function parsearOnNext(msg) {
+        const sin = msg.replace('[onNext] ', '');
+        const partes = sin.split(' | ');
+        return {
+            id:        (partes[0] || '').replace('bookingId=', '').trim(),
+            nombre:    (partes[1] || '—').trim(),
+            workspace: (partes[2] || '—').trim(),
+            horas:     (partes[3] || '—').replace('h', '').trim(),
+            precio:    (partes[4] || '—').trim()
+        };
+    }
+
+    function showAlert(msg, isError) {
+        const a = document.getElementById('pageAlert');
+        a.textContent = msg; a.style.display = 'block';
+        a.style.color = isError ? '#991b1b' : '#166534';
+        setTimeout(() => a.style.display = 'none', 2500);
+    }
+
+    loadActive().then(connectStream);
+</script>
+</body>
+</html>

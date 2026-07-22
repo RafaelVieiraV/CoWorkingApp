@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - CoWorking App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link th:href="@{/css/login.css}" rel="stylesheet"/>
+</head>
+<body>
+
+<div class="login-page">
+    <div class="sidebar-bar"></div>
+
+    <div class="login-left">
+        <img th:src="@{/images/login-image.jpg}" alt="CoWorking illustration"/>
+    </div>
+
+    <div class="login-right">
+
+        <!-- LOGIN -->
+        <div id="loginSection" class="form-section">
+            <h1 class="text-center">Login</h1>
+            <p class="subtitle">
+                Portal de Recepción: Inicie sesión para<br/>
+                gestionar el inventario de puestos.
+            </p>
+
+            <div id="loginError" class="error-msg"></div>
+            <div id="loginSuccess" class="success-msg"></div>
+
+            <div class="mb-3">
+                <input type="email" id="loginEmail" class="form-control" placeholder="Email" required/>
+            </div>
+            <div class="mb-4">
+                <input type="password" id="loginPassword" class="form-control" placeholder="Password" required/>
+            </div>
+            <button type="button" class="btn-start" onclick="doLogin()">Let's Start!</button>
+
+            <p class="toggle-link">
+                ¿No tienes una cuenta? <a onclick="toggleSection('register')">Regístrate</a>
+            </p>
+        </div>
+
+        <!-- REGISTRO -->
+        <div id="registerSection" class="form-section hidden">
+            <h1 class="text-center">Registro</h1>
+            <p class="subtitle">
+                Crea tu cuenta de administrador<br/>
+                para acceder al sistema.
+            </p>
+
+            <div id="registerError" class="error-msg"></div>
+            <div id="registerSuccess" class="success-msg"></div>
+
+            <div class="mb-3">
+                <input type="email" id="regEmail" class="form-control" placeholder="Email" required/>
+            </div>
+            <div class="mb-3">
+                <input type="password" id="regPassword" class="form-control" placeholder="Password" required/>
+            </div>
+            <div class="mb-4">
+                <input type="password" id="regConfirm" class="form-control" placeholder="Confirmar Password" required/>
+            </div>
+            <button type="button" class="btn-start" onclick="doRegister()">Crear cuenta</button>
+
+            <p class="toggle-link">
+                ¿Ya tienes cuenta? <a onclick="toggleSection('login')">Inicia sesión</a>
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<script th:src="@{/js/auth.js}"></script>
+</body>
+</html>

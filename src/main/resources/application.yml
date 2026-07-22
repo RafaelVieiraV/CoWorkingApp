@@ -2,18 +2,21 @@ spring:
   application:
     name: coworking-app
   datasource:
-    url: jdbc:mysql://localhost:3306/coworking_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-    username: root
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:postgresql://dpg-d8qrirp194ac7399qr70-a.oregon-postgres.render.com/coworking_db_2
+    username: coworking_db_2_user
+    password: xv7tLHQHoj5WE71h1OoscJCn0pxacOCf
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
 
 server:
-  port: 8080
+  port: 8081
+
+jwt:
+  secret: "clave-super-secreta-de-256-bits-para-coworking-app-espe"
+  expiration-ms: 86400000

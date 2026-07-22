@@ -1,0 +1,21 @@
+name: Rollback — Render
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_id:
+        description: 'ID del deploy de Render al que hacer rollback'
+        required: true
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ejecutar rollback en Render
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/rollback" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"deployId\": \"${{ github.event.inputs.deploy_id }}\"}"
+          echo "⏪ Rollback ejecutado"

@@ -1,7 +1,6 @@
 package ec.edu.espe.coworkingapp.domain;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,15 +26,16 @@ public class Booking {
     private LocalDateTime endDatetime;
 
     @Enumerated(EnumType.STRING)
-    private BookingStatus status = BookingStatus.PENDING;
+    @Column(nullable = false)
+    private BookingStatus status;
 
-    @Column(name = "total_hours", precision = 5, scale = 2)
-    private BigDecimal totalHours;
+    @Column(name = "total_hours", nullable = false)
+    private Double totalHours;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    public enum BookingStatus { PENDING, CONFIRMED, CANCELLED, COMPLETED }
+    public Booking() {}
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -46,11 +46,11 @@ public class Booking {
     public LocalDateTime getStartDatetime() { return startDatetime; }
     public void setStartDatetime(LocalDateTime v) { this.startDatetime = v; }
     public LocalDateTime getEndDatetime() { return endDatetime; }
-    public void setEndDatetime(LocalDateTime v) { this.endDatetime = v; }
+    public void setEndDatetime(LocalDateTime endDatetime) { this.endDatetime = endDatetime; }
     public BookingStatus getStatus() { return status; }
     public void setStatus(BookingStatus status) { this.status = status; }
-    public BigDecimal getTotalHours() { return totalHours; }
-    public void setTotalHours(BigDecimal totalHours) { this.totalHours = totalHours; }
+    public Double getTotalHours() { return totalHours; }
+    public void setTotalHours(Double totalHours) { this.totalHours = totalHours; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

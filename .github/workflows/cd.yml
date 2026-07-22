@@ -1,0 +1,19 @@
+name: CD — Deploy a Render
+
+on:
+  workflow_run:
+    workflows: ["CI - CoWorking App"]
+    types:
+      - completed
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Trigger deploy en Render
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          echo "✅ Deploy disparado en Render"
