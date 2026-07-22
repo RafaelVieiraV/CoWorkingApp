@@ -22,6 +22,7 @@ import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
 
 import ec.edu.espe.coworkingapp.service.BookingService;
 
+import ec.edu.espe.coworkingapp.service.MemberBlockClient;
 import ec.edu.espe.coworkingapp.web.advice.BusinessConflictException;
 
 import ec.edu.espe.coworkingapp.web.advice.ResourceNotFoundException;
@@ -58,15 +59,18 @@ public class BookingServiceImpl implements BookingService {
 
     private final WorkspaceRepository workspaceRepository;
 
+    private final MemberBlockClient memberBlockClient;
 
 
-    public BookingServiceImpl(BookingRepository bookingRepository, MemberRepository memberRepository, WorkspaceRepository workspaceRepository) {
+    public BookingServiceImpl(BookingRepository bookingRepository, MemberRepository memberRepository, WorkspaceRepository workspaceRepository,MemberBlockClient memberBlockClient) {
 
         this.bookingRepository = bookingRepository;
 
         this.memberRepository = memberRepository;
 
         this.workspaceRepository = workspaceRepository;
+
+        this.memberBlockClient = memberBlockClient;
 
     }
 
@@ -80,7 +84,11 @@ public class BookingServiceImpl implements BookingService {
 
                 .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado"));
 
-        if (!m.getActive()) throw new BusinessConflictException("El miembro no estÃ¡ activo");
+        if (!m.getActive()) throw new BusinessConflictException("El miembro no esta activo");
+
+        if (memberBlockClient.isBlocked(m.getEmail())) {
+            throw new BusinessConflictException("El miembro está bloqueado y no puede realizar reservas");
+        }
 
 
 

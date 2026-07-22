@@ -13,7 +13,7 @@ public class MemberResponseDto {
     private Integer monthlyHoursQuota;
     private Boolean active;
     private LocalDateTime createdAt;
-    // Optional extra logic mentioned in the spec, we will add manually where needed or include here.
+    private Boolean blocked;
     private Double usedHoursThisMonth;
 
     public Long getId() { return id; }
@@ -30,6 +30,8 @@ public class MemberResponseDto {
     public void setMonthlyHoursQuota(Integer monthlyHoursQuota) { this.monthlyHoursQuota = monthlyHoursQuota; }
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
+    public Boolean getBlocked() { return blocked; }
+    public void setBlocked(Boolean blocked) { this.blocked = blocked; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public Double getUsedHoursThisMonth() { return usedHoursThisMonth; }

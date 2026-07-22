@@ -16,4 +16,6 @@ public interface MemberService {
     void delete(Long id);
     List<MemberResponseDto> findAllActive();
     void deactivate(Long id);
+    void block(Long id);     // ← AÑADIR
+    void unblock(Long id);
 }

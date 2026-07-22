@@ -131,5 +131,17 @@ public class MemberController {
 
     }
 
+    @PatchMapping("/{id}/block")
+    public ResponseEntity<Void> block(@PathVariable Long id) {
+        memberService.block(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/unblock")
+    public ResponseEntity<Void> unblock(@PathVariable Long id) {
+        memberService.unblock(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
 

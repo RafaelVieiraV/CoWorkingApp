@@ -30,8 +30,13 @@ public class Member {
     @Column(name = "active", nullable = false)
     private Boolean active = true;
 
+    @Column(name = "blocked")
+    private Boolean blocked = false;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+
 
     public Member() {}
 
@@ -51,4 +56,6 @@ public class Member {
     public void setActive(Boolean active) { this.active = active; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Boolean getBlocked() { return blocked; }
+    public void setBlocked(Boolean blocked) { this.blocked = blocked; }
 }

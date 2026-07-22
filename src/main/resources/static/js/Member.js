@@ -70,6 +70,12 @@ function renderTable(members) {
                 '</button>';
         }
 
+        if (m.blocked) {
+            actions += '<button class="btn-action confirm" title="Desbloquear" onclick="unblockMember(' + m.id + ')"><i class="bi bi-unlock"></i></button>';
+        } else {
+            actions += '<button class="btn-action cancel" title="Bloquear" onclick="blockMember(' + m.id + ')"><i class="bi bi-lock"></i></button>';
+        }
+
         actions +=
             '<button class="btn-action delete" title="Eliminar" onclick="openDeleteModal(' + m.id + ')">' +
             '<i class="bi bi-trash"></i>' +
@@ -83,7 +89,7 @@ function renderTable(members) {
             '<td>' + planLabel(m.planType) + '</td>' +
             '<td>' + (m.monthlyHoursQuota || '-') + '</td>' +
             '<td>' + (m.usedHoursThisMonth != null ? m.usedHoursThisMonth : '-') + '</td>' +
-            '<td>' + activeBadge(m.active) + '</td>' +
+            '<td>' + activeBadge(m.active) + (m.blocked ? ' <span class="badge badge-cancelled">Bloqueado</span>' : '') + '</td>' +
             '<td><div class="actions-cell">' + actions + '</div></td>' +
             '</tr>';
     }).join('');
@@ -251,6 +257,36 @@ async function deactivateMember(id) {
         } else {
             var data = await res.json();
             showAlert(data.message || 'No se pudo desactivar el miembro', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
+}
+
+async function blockMember(id) {
+    try {
+        var res = await fetch('/api/members/' + id + '/block', { method: 'PATCH', headers: headers() });
+        if (res.ok || res.status === 204) {
+            showAlert('Miembro bloqueado', 'success');
+            loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo bloquear el miembro', 'error');
+        }
+    } catch (e) {
+        showAlert('Error de conexión', 'error');
+    }
+}
+
+async function unblockMember(id) {
+    try {
+        var res = await fetch('/api/members/' + id + '/unblock', { method: 'PATCH', headers: headers() });
+        if (res.ok || res.status === 204) {
+            showAlert('Miembro desbloqueado', 'success');
+            loadMembers(currentPage);
+        } else {
+            var data = await res.json();
+            showAlert(data.message || 'No se pudo desbloquear el miembro', 'error');
         }
     } catch (e) {
         showAlert('Error de conexión', 'error');
