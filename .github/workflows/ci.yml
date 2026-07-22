@@ -56,6 +56,12 @@ jobs:
           SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQL8Dialect
           SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL8Dialect
 
+      - name: Publicar JAR como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: coworking-app-jar
+          path: build/libs/*.jar
+
   docker:
     name: Build Docker Image
     runs-on: ubuntu-latest
