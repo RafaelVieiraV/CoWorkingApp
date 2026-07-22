@@ -15,6 +15,7 @@ import ec.edu.espe.coworkingapp.web.advice.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import ec.edu.espe.coworkingapp.service.MemberBlockClient;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -29,13 +30,16 @@ public class BookingServiceImpl implements BookingService {
     private final BookingRepository bookingRepository;
     private final MemberRepository memberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final MemberBlockClient memberBlockClient;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               MemberRepository memberRepository,
-                              WorkspaceRepository workspaceRepository) {
+                              WorkspaceRepository workspaceRepository,
+                              MemberBlockClient memberBlockClient) {
         this.bookingRepository = bookingRepository;
         this.memberRepository = memberRepository;
         this.workspaceRepository = workspaceRepository;
+        this.memberBlockClient = memberBlockClient;
     }
 
     @Override
@@ -43,6 +47,10 @@ public class BookingServiceImpl implements BookingService {
         Member m = memberRepository.findById(dto.getMemberId())
                 .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado"));
         if (!m.getActive()) throw new BusinessConflictException("El miembro no está activo");
+
+        if (memberBlockClient.isBlocked(m.getEmail())) {
+            throw new BusinessConflictException("El miembro está bloqueado y no puede realizar reservas");
+        }
 
         Workspace w = workspaceRepository.findById(dto.getWorkspaceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace no encontrado"));

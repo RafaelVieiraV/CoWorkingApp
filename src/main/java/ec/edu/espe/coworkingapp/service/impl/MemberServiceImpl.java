@@ -1,7 +1,5 @@
 package ec.edu.espe.coworkingapp.service.impl;
 
-
-
 import ec.edu.espe.coworkingapp.domain.BookingStatus;
 
 import ec.edu.espe.coworkingapp.domain.Member;
@@ -248,6 +246,8 @@ public class MemberServiceImpl implements MemberService {
 
         res.setActive(m.getActive());
 
+        res.setBlocked(Boolean.TRUE.equals(m.getBlocked()));
+
         res.setCreatedAt(m.getCreatedAt());
 
 
@@ -291,6 +291,28 @@ public class MemberServiceImpl implements MemberService {
 
         }
 
+    }
+
+    @Override
+    public void block(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado con id: " + id));
+        if (Boolean.TRUE.equals(member.getBlocked())) {
+            throw new BusinessConflictException("El miembro ya se encuentra bloqueado");
+        }
+        member.setBlocked(true);
+        memberRepository.save(member);
+    }
+
+    @Override
+    public void unblock(Long id) {
+        Member member = memberRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Miembro no encontrado con id: " + id));
+        if (!Boolean.TRUE.equals(member.getBlocked())) {
+            throw new BusinessConflictException("El miembro no se encuentra bloqueado");
+        }
+        member.setBlocked(false);
+        memberRepository.save(member);
     }
 
 }
