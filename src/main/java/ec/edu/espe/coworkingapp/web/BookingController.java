@@ -11,6 +11,9 @@ import ec.edu.espe.coworkingapp.dto.response.BookingResponseDto;
 import ec.edu.espe.coworkingapp.pubsub.BookingPipelineResult;
 import ec.edu.espe.coworkingapp.pubsub.BookingPipelineService;
 import ec.edu.espe.coworkingapp.service.BookingService;
+import ec.edu.espe.coworkingapp.reactive.service.BookingEventStreamService;
+import org.springframework.http.MediaType;
+import reactor.core.publisher.Flux;
 
 import jakarta.validation.Valid;
 
@@ -42,12 +45,13 @@ public class BookingController {
 
     private final BookingService bookingService;
     private final BookingPipelineService bookingPipelineService;
+    private final BookingEventStreamService bookingEventStreamService;
 
 
-
-    public BookingController(BookingService bookingService, BookingPipelineService bookingPipelineService) {
+    public BookingController(BookingService bookingService, BookingPipelineService bookingPipelineService, BookingEventStreamService bookingEventStreamService) {
         this.bookingService = bookingService;
         this.bookingPipelineService = bookingPipelineService;
+        this.bookingEventStreamService = bookingEventStreamService;
     }
 
 
@@ -142,6 +146,11 @@ public class BookingController {
 
         return ResponseEntity.ok(bookingService.cancel(id));
 
+    }
+     
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<BookingResponseDto> stream() {
+        return bookingEventStreamService.stream();
     }
      
     //Respuesta: la reserva recién creada + el resultado de la verificación reactiva sobre todas las reservas

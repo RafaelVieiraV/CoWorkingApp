@@ -10,6 +10,7 @@ import ec.edu.espe.coworkingapp.repository.BookingRepository;
 import ec.edu.espe.coworkingapp.repository.MemberRepository;
 import ec.edu.espe.coworkingapp.repository.WorkspaceRepository;
 import ec.edu.espe.coworkingapp.service.impl.BookingServiceImpl;
+import ec.edu.espe.coworkingapp.reactive.service.BookingEventStreamService;
 import ec.edu.espe.coworkingapp.web.advice.BusinessConflictException;
 import ec.edu.espe.coworkingapp.web.advice.ResourceNotFoundException;
 import org.junit.jupiter.api.Assertions;
@@ -35,6 +36,7 @@ public class BookingServiceImplTest {
     private MemberRepository memberRepository;
     private WorkspaceRepository workspaceRepository;
     private MemberBlockClient memberBlockClient;
+    private BookingEventStreamService bookingEventStreamService;
 
     @BeforeEach
     public void setUp() {
@@ -43,8 +45,9 @@ public class BookingServiceImplTest {
         memberRepository = Mockito.mock(MemberRepository.class);
         workspaceRepository = Mockito.mock(WorkspaceRepository.class);
         memberBlockClient = Mockito.mock(MemberBlockClient.class);
+        bookingEventStreamService = Mockito.mock(BookingEventStreamService.class);
         bookingService = new BookingServiceImpl(
-                bookingRepository, memberRepository, workspaceRepository, memberBlockClient);
+                bookingRepository, memberRepository, workspaceRepository, memberBlockClient, bookingEventStreamService);
     }
 
     // ═══════════════════════════ create ═══════════════════════════

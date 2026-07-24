@@ -6,6 +6,7 @@ import ec.edu.espe.coworkingapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import ec.edu.espe.coworkingapp.pubsub.BookingPipelineService;
+import ec.edu.espe.coworkingapp.reactive.service.BookingEventStreamService;
 import ec.edu.espe.coworkingapp.web.BookingController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,8 @@ public class BookingControllerTest {
     private JwtUtil jwtUtil;
     @MockBean
     private BookingPipelineService bookingPipelineService;
+    @MockBean
+    private BookingEventStreamService bookingEventStreamService;
     private ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
     @Test
     void createBooking() throws Exception {
