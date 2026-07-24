@@ -16,6 +16,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import ec.edu.espe.coworkingapp.service.MemberBlockClient;
+import ec.edu.espe.coworkingapp.reactive.service.BookingEventStreamService;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -31,15 +32,18 @@ public class BookingServiceImpl implements BookingService {
     private final MemberRepository memberRepository;
     private final WorkspaceRepository workspaceRepository;
     private final MemberBlockClient memberBlockClient;
+    private final BookingEventStreamService bookingEventStreamService;
 
     public BookingServiceImpl(BookingRepository bookingRepository,
                               MemberRepository memberRepository,
                               WorkspaceRepository workspaceRepository,
-                              MemberBlockClient memberBlockClient) {
+                              MemberBlockClient memberBlockClient,
+                              BookingEventStreamService bookingEventStreamService) {
         this.bookingRepository = bookingRepository;
         this.memberRepository = memberRepository;
         this.workspaceRepository = workspaceRepository;
         this.memberBlockClient = memberBlockClient;
+        this.bookingEventStreamService = bookingEventStreamService;
     }
 
     @Override
@@ -101,7 +105,9 @@ public class BookingServiceImpl implements BookingService {
         b.setTotalHours(totalHours);
         b.setCreatedAt(LocalDateTime.now());
 
-        return toResponse(bookingRepository.save(b));
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
+        bookingEventStreamService.publish(res);
+        return res;
     }
 
     @Override
@@ -193,7 +199,9 @@ public class BookingServiceImpl implements BookingService {
         b.setEndDatetime(dto.getEndDatetime());
         b.setTotalHours(totalHours);
 
-        return toResponse(bookingRepository.save(b));
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
+        bookingEventStreamService.publish(res);
+        return res;
     }
 
     @Override
@@ -212,7 +220,9 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessConflictException("El workspace ya no está disponible");
 
         b.setStatus(BookingStatus.CONFIRMADA);
-        return toResponse(bookingRepository.save(b));
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
+        bookingEventStreamService.publish(res);
+        return res;
     }
 
     @Override
@@ -223,7 +233,9 @@ public class BookingServiceImpl implements BookingService {
             throw new BusinessConflictException("La reserva ya está cancelada");
 
         b.setStatus(BookingStatus.CANCELADA);
-        return toResponse(bookingRepository.save(b));
+        BookingResponseDto res = toResponse(bookingRepository.save(b));
+        bookingEventStreamService.publish(res);
+        return res;
     }
 
     private BookingResponseDto toResponse(Booking b) {

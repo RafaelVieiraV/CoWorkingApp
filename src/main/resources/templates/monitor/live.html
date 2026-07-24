@@ -262,6 +262,27 @@
             render();
         };
         source.onerror   = () => { statusEl.className = 'status off'; statusEl.innerHTML = '<span class="dot"></span> Desconectado'; };
+
+        const bSource = new EventSource('/api/bookings/stream');
+        bSource.onmessage = (e) => {
+            const b = JSON.parse(e.data);
+            if (b.status === 'CONFIRMADA') {
+                const t = {
+                    bookingId: b.id,
+                    workspaceName: b.workspaceName,
+                    memberName: b.memberFullName,
+                    amount: b.totalPrice,
+                    paymentStatus: map.has(b.id) ? map.get(b.id).paymentStatus : 'PENDIENTE'
+                };
+                map.set(b.id, t);
+                render();
+            } else {
+                if (map.has(b.id)) {
+                    map.delete(b.id);
+                    render();
+                }
+            }
+        };
     }
 
     async function pay(bookingId) {
