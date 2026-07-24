@@ -6,6 +6,7 @@ import ec.edu.espe.coworkingapp.service.MemberService;
 import ec.edu.espe.coworkingapp.service.BookingService;
 import ec.edu.espe.coworkingapp.security.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ec.edu.espe.coworkingapp.web.MemberController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

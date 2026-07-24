@@ -1,4 +1,4 @@
-package ec.edu.espe.coworkingapp.web.controller;
+package ec.edu.espe.coworkingapp.web;
 
 
 
@@ -134,6 +134,18 @@ public class MemberController {
 
         return ResponseEntity.ok(bookingService.findByMember(id));
 
+    }
+
+    @PatchMapping("/{id}/block")
+    public ResponseEntity<Void> block(@PathVariable Long id) {
+        memberService.block(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/unblock")
+    public ResponseEntity<Void> unblock(@PathVariable Long id) {
+        memberService.unblock(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

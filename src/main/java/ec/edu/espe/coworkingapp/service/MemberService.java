@@ -17,4 +17,6 @@ public interface MemberService {
     List<MemberResponseDto> findAllActive();
     void deactivate(Long id);
     void activate(Long id);
+    void block(Long id);
+    void unblock(Long id);
 }

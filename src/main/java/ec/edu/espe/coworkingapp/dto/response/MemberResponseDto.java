@@ -12,6 +12,7 @@ public class MemberResponseDto {
     private PlanType planType;
     private Integer monthlyHoursQuota;
     private Boolean active;
+    private Boolean blocked;
     private double usedHoursThisMonth;
     private boolean quotaWarning;
     private LocalDateTime createdAt;
@@ -36,4 +37,6 @@ public class MemberResponseDto {
     public void setQuotaWarning(boolean quotaWarning) { this.quotaWarning = quotaWarning; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public Boolean getBlocked() { return blocked; }
+    public void setBlocked(Boolean blocked) { this.blocked = blocked; }
 }

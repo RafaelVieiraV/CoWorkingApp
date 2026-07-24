@@ -1,4 +1,4 @@
-package ec.edu.espe.coworkingapp.web.controller;
+package ec.edu.espe.coworkingapp.web;
 
 
 
