@@ -38,6 +38,7 @@ public class AuthControllerTest {
 
     private AdminRequestDto validRequest;
 
+    // Arrange común de todas las pruebas
     @BeforeEach
     void setUp() {
         validRequest = new AdminRequestDto();
@@ -47,10 +48,11 @@ public class AuthControllerTest {
 
     @Test
     void login_returnsTokenAndCookie() throws Exception {
+        // Arrange
         String fakeToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakeToken";
-
         when(authService.login(anyString(), anyString())).thenReturn(fakeToken);
 
+        // Act + Assert
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
@@ -64,8 +66,10 @@ public class AuthControllerTest {
 
     @Test
     void register_createsAdmin() throws Exception {
+        // Arrange
         doNothing().when(authService).register(anyString(), anyString());
 
+        // Act + Assert
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest)))
@@ -73,4 +77,3 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.message").value("Admin creado correctamente"));
     }
 }
-
