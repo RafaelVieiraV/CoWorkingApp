@@ -23,7 +23,7 @@ public class PaymentService {
     private final Map<Long, String> paymentStatus = new ConcurrentHashMap<>();
 
     // Fuente reactiva multicast para emitir cambios al stream
-    private final Sinks.Many<PaymentView> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<PaymentView> sink = Sinks.many().multicast().directBestEffort();
 
     public PaymentService(BookingService bookingService) {
         this.bookingService = bookingService;

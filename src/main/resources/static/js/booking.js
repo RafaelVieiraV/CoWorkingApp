@@ -347,4 +347,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
 
     loadBookings(0);
+    connectBookingStream();
 });
+
+// ── Reactivity ──
+function connectBookingStream() {
+    const bSource = new EventSource('/api/bookings/stream');
+    bSource.onmessage = (e) => {
+        // Se detectó un cambio desde el servidor, recargamos la tabla
+        loadBookings(currentPage);
+    };
+}
