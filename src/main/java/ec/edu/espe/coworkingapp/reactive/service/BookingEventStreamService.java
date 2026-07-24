@@ -9,7 +9,7 @@ import reactor.core.publisher.Sinks;
 public class BookingEventStreamService {
 
     // Multicast sink for real-time booking updates
-    private final Sinks.Many<BookingResponseDto> sink = Sinks.many().multicast().onBackpressureBuffer();
+    private final Sinks.Many<BookingResponseDto> sink = Sinks.many().multicast().directBestEffort();
 
     public void publish(BookingResponseDto booking) {
         sink.tryEmitNext(booking);

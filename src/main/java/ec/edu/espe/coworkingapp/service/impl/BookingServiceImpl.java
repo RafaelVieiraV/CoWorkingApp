@@ -207,6 +207,12 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public void delete(Long id) {
         bookingRepository.deleteById(id);
+        
+        // Emitir un evento ficticio para notificar a los clientes SSE que hubo un cambio (eliminación)
+        BookingResponseDto dummy = new BookingResponseDto();
+        dummy.setId(id);
+        dummy.setStatus(BookingStatus.CANCELADA);
+        bookingEventStreamService.publish(dummy);
     }
 
     public BookingResponseDto confirm(Long id) {
